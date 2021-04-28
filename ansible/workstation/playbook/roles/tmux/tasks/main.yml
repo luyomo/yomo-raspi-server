@@ -1,10 +1,12 @@
-- name: Git checkout
+- name: Download tmux source from github
+  when: False
   ansible.builtin.git:
     repo: 'https://github.com/tmux/tmux.git'
     dest: "{{TMP_DIR}}/tmux"
     version: "{{TMUX_VERSION}}"
 
 - name: Compile and install the tmux
+  when: False
   shell: |
     sh autogen.sh
     ./configure --prefix={{INSTALL_DIR}}/tmux/{{TMUX_VERSION}}
@@ -13,3 +15,56 @@
   args:
     executable: /bin/bash
     chdir: "{{TMP_DIR}}/tmux"
+
+- name: Download tmux config repository
+  become: yes
+  ansible.builtin.git:
+    repo: 'https://github.com/gpakosz/.tmux.git'
+    dest: "/opt/tmux/.tmux"
+
+- name: Create a symbolic link for config file
+  ansible.builtin.file:
+    src: /opt/tmux/.tmux/.tmux.conf
+    dest: "/home/{{USER}}/.tmux.conf"
+    state: link
+
+- name: copy tmux local config file
+  ansible.builtin.copy:
+    src: /opt/tmux/.tmux/.tmux.conf.local
+    dest: "/home/{{USER}}/.tmux.conf.local"
+    owner: "{{USER}}"
+    group: "{{USERGROUP}}"
+    mode: '0644'
+
+- name: Insert local config into .tmux.conf.local
+  blockinfile:
+    path: "/home/{{USER}}/.tmux.conf.local"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK "
+    block: |
+      set-option -g prefix C-q
+      set-option -g default-shell /opt/zsh/{{ZSH_VERSION}}/bin/zsh
+      set-option -g allow-rename off
+      bind-key F12 last-window
+      unbind %
+      unbind '"'
+      unbind l
+      unbind Up
+      unbind Down
+      unbind Left
+      unbind Right
+      
+      bind-key "M-h" select-pane -L
+      bind-key "M-l" select-pane -R
+      bind-key "M-k" select-pane -U
+      bind-key "M-j" select-pane -D
+      
+      bind-key | split-window -h
+      bind-key - split-window -v
+      
+      setw -g mode-keys vi
+      
+      bind e setw synchronize on
+      bind E setw synchronize off
+      
+      bind-key F9 send-prefix         # F9 + F9 + key = The key send to the secondary tmux
+      bind-key F8 send-keys F9 F12    # F9/F12 + F8   = Switch to the last window on the secondary tmux 
