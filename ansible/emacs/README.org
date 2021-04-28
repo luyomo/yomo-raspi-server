@@ -1,0 +1,2 @@
+1. Download emacs source code from below link
+http://ftp.jaist.ac.jp/pub/GNU/emacs/emacs-27.2.tar.gz

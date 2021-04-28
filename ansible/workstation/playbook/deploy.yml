@@ -1,0 +1,7 @@
+---
+- name: Deploy the tmux in the workstation
+  hosts: workstation
+  tags:
+      - tmux
+  roles:
+      - ./roles/tmux

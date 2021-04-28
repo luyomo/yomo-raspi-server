@@ -1,0 +1,13 @@
+* How to run the ansible
+ansible-playbook -i inventories/hosts.yml deploy.yml
+
+* Contents
+** tmux
+git clone https://github.com/tmux/tmux.git
+** vim
+** emacs
+** zsh
+** oh-my-zsh
+** autojump
+** docker/docker-compose
+

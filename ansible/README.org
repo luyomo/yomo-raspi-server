@@ -1,0 +1,38 @@
+* Manual preparation
+** Upgrade ansible to latest
+#+BEGIN_SRC
+$echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main" | sudo tee -a
+$sudo apt install dirmngr -y
+$sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
+$sudo apt update
+$sudo apt install -y ansible
+$ansible --version
+#+END_SRC
+https://www.theurbanpenguin.com/installing-ansible-on-the-raspberry-pi/
+
+** Deploy ssh key for deployment
+#+BEGIN_SRC
+pi@web01:~/.ssh $ ssh-keygen 
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/pi/.ssh/id_rsa): 
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in /home/pi/.ssh/id_rsa.
+Your public key has been saved in /home/pi/.ssh/id_rsa.pub.
+The key fingerprint is:
+SHA256:e4+rLbYkIasrbI0GyKOkrDMnoflNAFP/Ju82d5aBDI4 pi@web01.51yomo.com
+The key's randomart image is:
++---[RSA 2048]----+
+|  .              |
+| . .             |
+|o   .            |
+| o   ..          |
+|o . oo+oS.       |
+|++ .E*..o..      |
+|Oo+ o o o .o     |
+|X*.= .oo+o+o     |
+|=B+....+o*+..    |
++----[SHA256]-----+
+pi@web01:~/.ssh $ cat id_rsa.pub >> authorized_keys
+#+END_SRC
+

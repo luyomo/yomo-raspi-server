@@ -1,0 +1,15 @@
+- name: Git checkout
+  ansible.builtin.git:
+    repo: 'https://github.com/tmux/tmux.git'
+    dest: "{{TMP_DIR}}/tmux"
+    version: "{{TMUX_VERSION}}"
+
+- name: Compile and install the tmux
+  shell: |
+    sh autogen.sh
+    ./configure --prefix={{INSTALL_DIR}}/tmux/{{TMUX_VERSION}}
+    make
+    sudo make install
+  args:
+    executable: /bin/bash
+    chdir: "{{TMP_DIR}}/tmux"
