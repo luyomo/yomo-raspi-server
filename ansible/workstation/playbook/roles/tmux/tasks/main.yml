@@ -1,11 +1,11 @@
-- name: Download tmux source from github
+- name: 1.1 tmux - Download tmux source from github
   when: False
   ansible.builtin.git:
     repo: 'https://github.com/tmux/tmux.git'
     dest: "{{TMP_DIR}}/tmux"
     version: "{{TMUX_VERSION}}"
 
-- name: Compile and install the tmux
+- name: 1.2 tmux - Compile and install the tmux
   when: False
   shell: |
     sh autogen.sh
@@ -16,19 +16,21 @@
     executable: /bin/bash
     chdir: "{{TMP_DIR}}/tmux"
 
-- name: Download tmux config repository
+- name: 2.1 tmux config - Download tmux config repository
   become: yes
   ansible.builtin.git:
     repo: 'https://github.com/gpakosz/.tmux.git'
     dest: "/opt/tmux/.tmux"
 
-- name: Create a symbolic link for config file
-  ansible.builtin.file:
+- name: 2.2 tmux config - Create a symbolic link for config file
+  ansible.builtin.copy:
     src: /opt/tmux/.tmux/.tmux.conf
     dest: "/home/{{USER}}/.tmux.conf"
-    state: link
+    owner: "{{USER}}"
+    group: "{{USERGROUP}}"
+    mode: '0644'
 
-- name: copy tmux local config file
+- name: 2.3 tmux config - copy tmux local config file
   ansible.builtin.copy:
     src: /opt/tmux/.tmux/.tmux.conf.local
     dest: "/home/{{USER}}/.tmux.conf.local"
@@ -36,7 +38,16 @@
     group: "{{USERGROUP}}"
     mode: '0644'
 
-- name: Insert local config into .tmux.conf.local
+- name: 2.4 tmux config - Insert local config into .tmux.conf.local
+  blockinfile:
+    path: "/home/{{USER}}/.tmux.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK "
+    block: |
+      set -g @plugin 'tmux-plugins/tpm'
+      set -g @plugin 'tmux-plugins/tmux-sessionist'
+      run '~/.tmux/plugins/tpm/tpm'
+
+- name: 2.5 tmux config - Insert local config into .tmux.conf.local
   blockinfile:
     path: "/home/{{USER}}/.tmux.conf.local"
     marker: "# {mark} ANSIBLE MANAGED BLOCK "
@@ -68,3 +79,9 @@
       
       bind-key F9 send-prefix         # F9 + F9 + key = The key send to the secondary tmux
       bind-key F8 send-keys F9 F12    # F9/F12 + F8   = Switch to the last window on the secondary tmux 
+
+- name: 3.1 tmux plugins - Download tmux source from github
+  become: yes
+  ansible.builtin.git:
+    repo: 'https://github.com/tmux-plugins/tpm.git'
+    dest: "/home/{{USER}}/.tmux/plugins/tpm"
