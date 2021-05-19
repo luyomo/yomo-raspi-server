@@ -35,3 +35,10 @@
       - containerd.io
       - docker-compose
     update_cache: yes
+
+- name: Add the user 'pi' to the group 'docker'
+  become: yes
+  ansible.builtin.user:
+    name: pi
+    groups: pi,docker,sudo,adm,users
+    append: no
