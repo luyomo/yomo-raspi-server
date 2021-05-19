@@ -4,4 +4,5 @@
   tags:
       - tmux
   roles:
-      - ./roles/tmux
+      - ./roles/zsh
+        #      - ./roles/tmux

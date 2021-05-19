@@ -1,0 +1,5 @@
+---
+- name: Deploy the tmux in the workstation
+  hosts: base
+  roles:
+      - ./roles/docker

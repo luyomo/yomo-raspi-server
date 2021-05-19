@@ -1,0 +1,101 @@
+- name: 1.1 zsh - Download zsh source from github
+  when: False
+  ansible.builtin.git:
+    repo: 'https://github.com/zsh-users/zsh.git'
+    dest: "{{TMP_DIR}}/zsh"
+    version: "zsh-{{ZSH_VERSION}}"
+
+- name: 1.2 zsh - Compile and install the tmux
+  when: False
+  shell: |
+    autoconf
+    autoreconf
+    ./configure --prefix={{INSTALL_DIR}}/zsh/{{ZSH_VERSION}}
+    make
+    sudo make install.bin install.modules install.fns
+  args:
+    executable: /bin/bash
+    chdir: "{{TMP_DIR}}/zsh"
+
+- name: 2.1 oh-my-zsh - Download oh-my-zsh source from github
+  ansible.builtin.git:
+    repo: 'https://github.com/ohmyzsh/ohmyzsh.git'
+    dest: "/home/{{USER}}/.oh-my-zsh"
+
+- name: 2.2 oh-my-zsh config copy
+  ansible.builtin.copy:
+    src: "/home/{{USER}}/.oh-my-zsh/templates/zshrc.zsh-template"
+    dest: "/home/{{USER}}/.zshrc"
+    owner: "{{USER}}"
+    group: "{{USERGROUP}}"
+    mode: '0644'
+
+    #- name: 2.1 tmux config - Download tmux config repository
+    #  become: yes
+    #  ansible.builtin.git:
+    #    repo: 'https://github.com/gpakosz/.tmux.git'
+    #    dest: "/opt/tmux/.tmux"
+    #
+    #- name: 2.2 tmux config - Create a symbolic link for config file
+    #  ansible.builtin.copy:
+    #    src: /opt/tmux/.tmux/.tmux.conf
+    #    dest: "/home/{{USER}}/.tmux.conf"
+    #    owner: "{{USER}}"
+    #    group: "{{USERGROUP}}"
+    #    mode: '0644'
+    #
+    #- name: 2.3 tmux config - copy tmux local config file
+    #  ansible.builtin.copy:
+    #    src: /opt/tmux/.tmux/.tmux.conf.local
+    #    dest: "/home/{{USER}}/.tmux.conf.local"
+    #    owner: "{{USER}}"
+    #    group: "{{USERGROUP}}"
+    #    mode: '0644'
+    #
+    #- name: 2.4 tmux config - Insert local config into .tmux.conf.local
+    #  blockinfile:
+    #    path: "/home/{{USER}}/.tmux.conf"
+    #    marker: "# {mark} ANSIBLE MANAGED BLOCK "
+    #    block: |
+    #      set -g @plugin 'tmux-plugins/tpm'
+    #      set -g @plugin 'tmux-plugins/tmux-sessionist'
+    #      run '~/.tmux/plugins/tpm/tpm'
+    #
+    #- name: 2.5 tmux config - Insert local config into .tmux.conf.local
+    #  blockinfile:
+    #    path: "/home/{{USER}}/.tmux.conf.local"
+    #    marker: "# {mark} ANSIBLE MANAGED BLOCK "
+    #    block: |
+    #      set-option -g prefix C-q
+    #      set-option -g default-shell /opt/zsh/{{ZSH_VERSION}}/bin/zsh
+    #      set-option -g allow-rename off
+    #      bind-key F12 last-window
+    #      unbind %
+    #      unbind '"'
+    #      unbind l
+    #      unbind Up
+    #      unbind Down
+    #      unbind Left
+    #      unbind Right
+    #      
+    #      bind-key "M-h" select-pane -L
+    #      bind-key "M-l" select-pane -R
+    #      bind-key "M-k" select-pane -U
+    #      bind-key "M-j" select-pane -D
+    #      
+    #      bind-key | split-window -h
+    #      bind-key - split-window -v
+    #      
+    #      setw -g mode-keys vi
+    #      
+    #      bind e setw synchronize on
+    #      bind E setw synchronize off
+    #      
+    #      bind-key F9 send-prefix         # F9 + F9 + key = The key send to the secondary tmux
+    #      bind-key F8 send-keys F9 F12    # F9/F12 + F8   = Switch to the last window on the secondary tmux 
+    #
+    #- name: 3.1 tmux plugins - Download tmux source from github
+    #  become: yes
+    #  ansible.builtin.git:
+    #    repo: 'https://github.com/tmux-plugins/tpm.git'
+    #    dest: "/home/{{USER}}/.tmux/plugins/tpm"
