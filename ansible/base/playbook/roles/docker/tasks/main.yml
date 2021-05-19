@@ -1,3 +1,9 @@
+- name: Remove the docker repo file before update
+  become: yes
+  file:
+      path: /etc/apt/sources.list.d/docker.list
+      state: absent
+
 - name: Update repositories cache and install docker dependency packages
   become: yes
   apt:
