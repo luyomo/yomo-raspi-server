@@ -1,0 +1,7 @@
+- name: Install the required packages
+  become: yes
+  apt:
+    name: 
+      - vim
+      - telnet
+    update_cache: yes

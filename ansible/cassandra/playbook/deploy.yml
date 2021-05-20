@@ -1,0 +1,6 @@
+---
+- name: Deploy the tmux in the workstation
+  tags: cassandra
+  hosts: cassandra
+  roles:
+      - ./roles/docker

@@ -1,5 +1,12 @@
 ---
 - name: Deploy the tmux in the workstation
+  tags: general
+  hosts: base
+  roles:
+      - ./roles/general
+
+- name: Deploy the tmux in the workstation
+  tags: docker
   hosts: base
   roles:
       - ./roles/docker

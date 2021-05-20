@@ -1,0 +1,29 @@
+- name: Pull cassandra image from repository
+  docker_image:
+    name: cassandra
+    source: pull
+
+- name: Prepare the cassandra config file
+  become: yes
+  file:
+    path: "/opt/cassandra/{{ item }}"
+    state: directory
+    owner: pi
+    group: pi
+    mode: '0755'
+  loop:
+    - etc
+    - docker-compose
+
+- name: cassandra.yml file copy to target server
+  become: yes
+  template:
+    src: "{{ item.src  }}"
+    dest: "/opt/cassandra/{{ item.dest }}"
+    owner: pi
+    group: pi
+    mode: u=rw,g=r,o=r
+  loop:
+    - { src: cassandra.yaml    , dest: etc/cassandra.yaml                }
+    - { src: docker-compose.yml, dest: docker-compose/docker-compose.yml }
+    
