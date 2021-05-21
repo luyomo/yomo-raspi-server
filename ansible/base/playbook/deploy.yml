@@ -1,12 +1,18 @@
 ---
-- name: Deploy the tmux in the workstation
+- name: Deploy the general in the workstation
   tags: general
   hosts: base
   roles:
       - ./roles/general
 
-- name: Deploy the tmux in the workstation
+- name: Deploy the docker in the workstation
   tags: docker
   hosts: base
   roles:
       - ./roles/docker
+
+- name: Deploy the golang in the workstation
+  tags: golang
+  hosts: base
+  roles:
+      - ./roles/golang
