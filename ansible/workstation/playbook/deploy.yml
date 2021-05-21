@@ -4,5 +4,18 @@
   tags:
       - tmux
   roles:
+      - ./roles/tmux
+
+- name: Deploy the zsh in the workstation
+  hosts: workstation
+  tags:
+      - zsh
+  roles:
       - ./roles/zsh
-        #      - ./roles/tmux
+
+- name: Deploy the cht in the workstation
+  hosts: workstation
+  tags:
+      - cht
+  roles:
+      - ./roles/cht

@@ -1,0 +1,7 @@
+- name: 1.1 Download the cht.sh
+  become: true
+  ansible.builtin.get_url:
+    url: 'https://cht.sh/:cht.sh'
+    dest: "/usr/local/bin/cht"
+    mode: "0755"
+
