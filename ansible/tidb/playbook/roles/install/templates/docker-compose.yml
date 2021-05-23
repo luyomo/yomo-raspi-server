@@ -1,0 +1,14 @@
+version: '2'
+services:
+  cassandra-ins:
+    image: cassandra
+    container_name: {{ansible_host}}
+    #volumes:
+    #  - /opt/cassandra/etc/cassandra.yaml:/etc/cassandra/cassandra.yaml
+    environment:
+      - CASSANDRA_BROADCAST_ADDRESS={{ansible_host}}
+      - CASSANDRA_SEEDS={{SEEDS}}
+    ports:
+      - 7000
+    restart: always
+    network_mode: host

@@ -1,0 +1,4 @@
+GROUP:
+  tidb: 10001
+USER:
+  tidb: 10001

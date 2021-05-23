@@ -1,0 +1,17 @@
+- name: File removal
+  file:
+    path: "roles/{{ item }}" 
+    state: absent
+  loop:
+    - initenv/files/tidb_rsa_key
+    - initenv/files/tidb_rsa_key.pub
+    - install/files/tidb_rsa_key
+
+- name: Generate the ssh key
+  shell: echo -e 'y\n'|ssh-keygen -q -t rsa -f roles/initenv/files/tidb_rsa_key -C "" -N ""
+
+- name: encrypt the private key file
+  shell: ansible-vault encrypt --vault-id tidb@.passwd roles/initenv/files/tidb_rsa_key
+
+- name: File link
+  shell: ln -s ../../initenv/files/tidb_rsa_key roles/install/files/tidb_rsa_key

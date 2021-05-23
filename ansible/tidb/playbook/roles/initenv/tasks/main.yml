@@ -1,0 +1,69 @@
+- name: 01.01 Create tidb group
+  become: yes
+  group:
+    name: tidb
+    state: present
+    gid: "{{GROUP.tidb}}"
+
+- name: 01.02 Create tidb user
+  become: yes
+  user:
+    name: tidb
+    state: present
+    group: tidb
+    uid: "{{USER.tidb}}"
+ 
+- name: 01.03 add the sudo file for tidb 
+  become: yes
+  copy:
+    src: tidb.sudo
+    dest: /etc/sudoers.d/tidb
+    mode: u=r,g=r
+    owner: root
+    group: root
+
+- name: 02.01 disabling swapiness
+  become: yes
+  blockinfile:
+    path: /etc/sysctl.conf
+    block: |
+      fs.file-max = 1000000
+      net.core.somaxconn = 32768
+      net.ipv4.tcp_syncookies = 0
+      vm.overcommit_memory = 1
+      vm.swappiness = 0
+
+- name: 02.02 change the limit parameters
+  become: yes
+  blockinfile:
+    path: /etc/security/limits.conf
+    block: |
+      tidb           soft    nofile          1000000
+      tidb           hard    nofile          1000000
+      tidb           soft    stack           32768
+      tidb           hard    stack           32768
+
+- name: 02.03 disabling swappiness by command
+  become: yes
+  shell: |
+    swapoff -a && swapon -a
+    sysctl -p
+
+- name: 03.01 prepare the .ssh folder
+  become: yes
+  file:
+    path: /home/tidb/.ssh
+    owner: tidb
+    group: tidb
+    state: directory
+    mode: "0700"
+
+- name: 03.02 ssh key file deployment
+  become: yes
+  copy:
+     src: "{{ item.src }}"
+     dest: "/home/tidb/.ssh/{{ item.dest }}"
+     decrypt: yes
+  loop:
+     - {src: "tidb_rsa_key"     , dest: "id_rsa"         }
+     - {src: "tidb_rsa_key.pub" , dest: "authorized_keys"}

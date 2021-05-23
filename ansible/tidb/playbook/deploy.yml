@@ -1,0 +1,18 @@
+---
+- name: local generation
+  tags: local
+  hosts: localhost
+  roles:
+      - ./roles/local
+
+- name: binary installation
+  tags: bin
+  hosts: tidbController
+  roles:
+      - ./roles/install
+
+- name: target initialize the env
+  tags: env
+  hosts: tidbnode
+  roles:
+      - ./roles/initenv

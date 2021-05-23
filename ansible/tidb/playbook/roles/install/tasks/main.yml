@@ -1,0 +1,57 @@
+- name: 01.01 Create tidb group
+  become: yes
+  group:
+    name: tidb
+    state: present
+    gid: "{{GROUP.tidb}}"
+
+- name: 01.02 Create tidb user
+  become: yes
+  user:
+    name: tidb
+    state: present
+    group: tidb
+    uid: "{{USER.tidb}}"
+
+- name: 02.01 tiup bin download
+  become_user: tidb
+  get_url:
+    url: https://tiup-mirrors.pingcap.com/install.sh
+    dest: /tmp/install.sh
+    mode: "0755"
+
+- name: 02.02 tiup installation
+  become_user: tidb
+  shell: /tmp/install.sh
+
+- name: 02.03 Add the search path into ~/.bashrc.local
+  become: yes 
+  lineinfile:
+    path: /home/tidb/.bashrc
+    line: export PATH=/home/tidb/.tiup/bin:$PATH
+
+- name: 03.01 prepare the .ssh folder
+  become: yes
+  file:
+    path: /home/tidb/.ssh
+    owner: tidb
+    group: tidb
+    state: directory
+    mode: "0700"
+ 
+- name: 03.02 ssh key file deployment
+  become: yes
+  copy:
+     src: "tidb_rsa_key"
+     dest: "/home/tidb/.ssh/id_rsa"
+     decrypt: yes
+
+- name: 03.03 config file
+  become: yes
+  file:
+    path: /home/tidb/.ssh/config
+    state: touch
+    content: StrictHostKeyChecking no
+    owner: tidb
+    group: tidb
+    mode: "0600"
