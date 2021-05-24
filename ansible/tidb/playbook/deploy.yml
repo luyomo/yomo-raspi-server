@@ -16,3 +16,9 @@
   hosts: tidbnode
   roles:
       - ./roles/initenv
+
+- name: deplyment
+  tags: deploy
+  hosts: tidbController
+  roles:
+      - ./roles/deploy

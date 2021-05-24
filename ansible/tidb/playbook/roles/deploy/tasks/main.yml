@@ -1,0 +1,30 @@
+- name: 01.01 Prepare the director for the config file
+  become: yes
+  file:
+    path: /home/tidb/workstation/config
+    state: directory
+    mode: "0755"
+    owner: tidb
+    group: tidb
+
+- name: 01.02 templates deployment
+  become: yes
+  template:
+    src: "tidb.minimum.yaml.template"
+    dest: "/home/tidb/workstation/config/tidb.minimum.yaml"
+    owner: tidb
+    group: tidb
+    mode: "0644"
+
+
+    #- name: 02.01 disabling swapiness
+    #  become: yes
+    #  blockinfile:
+    #    path: /etc/sysctl.conf
+    #    block: |
+    #      fs.file-max = 1000000
+    #      net.core.somaxconn = 32768
+    #      net.ipv4.tcp_syncookies = 0
+    #      vm.overcommit_memory = 1
+    #      vm.swappiness = 0
+    #

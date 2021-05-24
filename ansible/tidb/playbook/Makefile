@@ -6,10 +6,12 @@ init_test:
 
 init:
 	ansible-playbook deploy.yml -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3'  --vault-password-file .passwd --tags env
-	#ansible-playbook deploy.yml -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3' --vault-id tidb@.passwd --tags env
 
 local:
 	ansible-playbook deploy.yml -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3' --tags local
+
+deploy:
+	ansible-playbook deploy.yml -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3' --vault-password-file .passwd --tags deploy
 
 ##Simple##########################################
 minimal_simple_test:

@@ -1,3 +1,10 @@
+- name: Enable the temp file in the ansible
+  become: yes
+  ansible.builtin.lineinfile:
+    path: /etc/ansible/ansible.cfg
+    regexp: '#allow_world_readable_tmpfiles = False'
+    line: allow_world_readable_tmpfiles = True
+
 - name: File removal
   file:
     path: "roles/{{ item }}" 

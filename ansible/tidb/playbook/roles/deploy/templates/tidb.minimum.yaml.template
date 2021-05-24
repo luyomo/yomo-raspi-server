@@ -1,0 +1,41 @@
+# # Global variables are applied to all deployments and used as the default value of
+# # the deployments if a specific deployment value is missing.
+global:
+  user: "tidb"
+  ssh_port: 22
+  deploy_dir: "/TIDB/deploy"
+  data_dir: "/TIDB/data"
+
+pd_servers:
+  - host: 192.168.1.101
+    arch: "arm64"
+  - host: 192.168.1.102
+    arch: "arm64"
+  - host: 192.168.1.103
+    arch: "arm64"
+
+tidb_servers:
+  - host: 192.168.1.108
+    arch: "arm64"
+  - host: 192.168.1.109
+    arch: "arm64"
+
+tikv_servers:
+  - host: 192.168.1.104
+    arch: "arm64"
+  - host: 192.168.1.105
+    arch: "arm64"
+  - host: 192.168.1.106
+    arch: "arm64"
+
+monitoring_servers:
+  - host: 192.168.1.107
+    arch: "arm64"
+
+grafana_servers:
+  - host: 192.168.1.107
+    arch: "arm64"
+
+alertmanager_servers:
+  - host: 192.168.1.107
+    arch: "arm64"

@@ -63,7 +63,22 @@
   copy:
      src: "{{ item.src }}"
      dest: "/home/tidb/.ssh/{{ item.dest }}"
+     owner: tidb
+     group: tidb
+     mode: "0600"
      decrypt: yes
   loop:
      - {src: "tidb_rsa_key"     , dest: "id_rsa"         }
      - {src: "tidb_rsa_key.pub" , dest: "authorized_keys"}
+
+- name: 04.01 prepare the directory for deployment
+  become: yes
+  file:
+    path: "/TIDB/{{ item }}"
+    owner: tidb
+    group: tidb
+    state: directory
+    mode: "0700"
+  loop:
+    - deploy
+    - data
