@@ -74,7 +74,7 @@
 - name: 04.01 prepare the directory for deployment
   become: yes
   file:
-    path: "/TIDB/{{ item }}"
+    path: "/DATA/{{ item }}"
     owner: tidb
     group: tidb
     state: directory

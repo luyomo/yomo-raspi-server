@@ -19,3 +19,10 @@
 ** The complex template for the hybrid deployment
 * Geo-distributed deployment topology
 ** The geo-distributed topology template
+
+* Test case
+mysql -h 192.168.1.108 -P 4000 -u root -e "set @@global.tidb_disable_txn_auto_retry = off"
+mysql -h 192.168.1.108 -P 4000 -u root -e "set @@global.tidb_retry_limit = 10"
+mysql -h 192.168.1.108 -P 4000 -u root -e "create database sbtest"
+
+sysbench --config-file=config oltp_point_select --tables=32 --table-size=10000000 prepare

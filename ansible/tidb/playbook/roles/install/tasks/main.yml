@@ -51,10 +51,29 @@
 
 - name: 03.03 config file
   become: yes
-  file:
-    path: /home/tidb/.ssh/config
-    state: touch
+  copy:
+    dest: /home/tidb/.ssh/config
     content: StrictHostKeyChecking no
     owner: tidb
     group: tidb
     mode: "0600"
+
+- name: Prepare the folder workstation
+  become: yes
+  ansible.builtin.file:
+    path: /home/tidb/workstation
+    state: directory
+    owner: tidb
+    group: tidb
+
+- name: Add the sysbench repository
+  become: yes
+  shell: curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.deb.sh | sudo bash
+
+- name: Install the required packages
+  become: yes
+  apt:
+    name:
+      - mariadb-client
+      - sysbench
+    update_cache: yes

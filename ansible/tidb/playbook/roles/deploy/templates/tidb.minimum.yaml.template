@@ -3,8 +3,8 @@
 global:
   user: "tidb"
   ssh_port: 22
-  deploy_dir: "/TIDB/deploy"
-  data_dir: "/TIDB/data"
+  deploy_dir: "/DATA/deploy"
+  data_dir: "/DATA/data"
 
 pd_servers:
   - host: 192.168.1.101
