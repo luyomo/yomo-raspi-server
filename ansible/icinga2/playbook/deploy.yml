@@ -1,0 +1,12 @@
+---
+- name: single node installation
+  tags: single
+  hosts: icinga2
+  roles:
+      - ./roles/single
+
+- name: destroy the icinga2 env
+  tags: destroy
+  hosts: icinga2
+  roles:
+      - ./roles/destroy

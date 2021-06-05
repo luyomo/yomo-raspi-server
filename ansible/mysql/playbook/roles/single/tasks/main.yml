@@ -1,0 +1,30 @@
+- name: Pull mariadb images from remote
+  docker_image:
+    name: mariadb
+    source: pull
+
+- name: directory preparation
+  become: yes
+  file:
+    path: /var/mariadb/docker-compose
+    owner: pi
+    group: pi
+    state: directory
+
+- name: docker compose deployment
+  become: yes
+  template:
+    src: "{{ item.src  }}"
+    dest: "/var/mariadb/{{ item.dest }}"
+    owner: pi
+    group: pi
+    mode: u=rw,g=r,o=r
+  loop:
+    - { src: docker-compose.yml, dest: docker-compose/docker-compose.yml }
+
+- name: maraidb client installation
+  become: yes
+  apt:
+      name: "{{item}}"
+  loop:
+    - mariadb-client-10.3

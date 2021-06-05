@@ -17,3 +17,6 @@ cht_test:
 
 cht:
 	ansible-playbook deploy.yml -i inventories/hosts.yml $(INTERPRETER) --tags cht
+
+emacs:
+	ansible-playbook deploy.yml -i inventories/hosts.yml $(INTERPRETER) --tags emacs

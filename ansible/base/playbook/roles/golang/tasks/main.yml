@@ -1,18 +1,12 @@
 - name: Install the linux arm to /usr/local
+  become: yes
   ansible.builtin.unarchive:
     src: https://golang.org/dl/go1.16.4.linux-arm64.tar.gz
-    dest: /tmp
+    dest: /opt
     remote_src: yes
 
-- name: Copy bin files to /usr/local/bin
+- name: Add GOROOT to the .bashrc.local
   become: yes
-  shell: "cp /tmp/go/bin/{{ item  }} /usr/local/bin/"
-  loop:
-    - go
-    - gofmt
-
-- name: Delete content & directory
-  file:
-    state: absent
-    path: /tmp/go
-
+  lineinfile:
+    path: /home/pi/.bashrc.local
+    line: export GOROOT=/opt/go

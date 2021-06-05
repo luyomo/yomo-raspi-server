@@ -1,0 +1,11 @@
+* Run the ansible to deploy the icinga2
+make single
+
+* Run the below command on the icinga2 target server
+#+BEGIN_SRC
+pi@c1s04:~ $ sudo icingacli setup token show
+The current setup token is: b3bb80b6ff08b3bd
+#+END_SRC
+
+* Go to the below URL to setup web
+http://deploy-server/icingaweb2/setup

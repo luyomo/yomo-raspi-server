@@ -1,0 +1,6 @@
+---
+- name: single node installation
+  tags: single
+  hosts: mysql_single
+  roles:
+      - ./roles/single

@@ -1,0 +1,102 @@
+- name: icinga installation
+  become: yes
+  apt:
+      name: "{{item}}"
+  loop:
+    - icinga2
+    - icinga2-ido-mysql
+    - monitoring-plugins
+    - mariadb-client-10.3
+    - icingaweb2 
+    - icingacli
+    - icingaweb2 
+    - libapache2-mod-php 
+    - icingacli
+
+- name: mysql ido configuration
+  become: yes
+  when: true
+  template:
+    src: "ido-mysql.conf"
+    dest: /etc/icinga2/features-available/ido-mysql.conf
+    owner: nagios
+    group: nagios
+    mode: "0400"
+
+- name: mysql objects preparation
+  when: true
+  shell: |
+    mysql -h {{ MYSQL_HOST }} -P {{ MYSQL_PORT }} -u {{ MYSQL_USER }} -p{{ MYSQL_PASSWORD }} mysql -e 'CREATE DATABASE if not exists icinga'
+    mysql -h {{ MYSQL_HOST }} -P {{ MYSQL_PORT }} -u {{ MYSQL_USER }} -p{{ MYSQL_PASSWORD }} mysql -e "CREATE USER 'icinga'@'%' IDENTIFIED BY 'icinga'"
+    mysql -h {{ MYSQL_HOST }} -P {{ MYSQL_PORT }} -u {{ MYSQL_USER }} -p{{ MYSQL_PASSWORD }} mysql -e "GRANT ALL ON icinga.* TO 'icinga'@'%'"
+    mysql -h {{ MYSQL_HOST }} -P {{ MYSQL_PORT }} -u {{ MYSQL_USER }} -p{{ MYSQL_PASSWORD }} mysql -e "FLUSH PRIVILEGES"
+    mysql -h {{ MYSQL_HOST }} -P {{ MYSQL_PORT }} -u {{ MYSQL_USER }} -p{{ MYSQL_PASSWORD }} icinga < /usr/share/icinga2-ido-mysql/schema/mysql.sql
+    sudo /usr/sbin/icinga2 feature enable ido-mysql
+
+- name: Service restart
+  become: yes
+  when: true
+  ansible.builtin.systemd:
+    state: restarted
+    daemon_reload: yes
+    enabled: true
+    name: "{{ item }}"
+  loop: 
+    - icinga2
+
+- name: Setting Up Icinga 2 REST API
+  when: true
+  become: yes
+  shell: |
+    icinga2 api setup
+
+- name: Configure the api users 
+  when: true
+  become: yes
+  blockinfile:
+    path: /etc/icinga2/conf.d/api-users.conf
+    block: |
+      object ApiUser "icingaweb2" {
+        password = "Wijsn8Z9eRs5E25d"
+        permissions = [ "status/query", "actions/*", "objects/modify/*", "objects/query/*" ]
+      }
+
+- name: Configure apache2 config file
+  when: true
+  become: yes
+  lineinfile:
+    path: /etc/php/7.3/apache2/php.ini
+    regexp: "^;date.timezone ="
+    line: date.timezone = "Asia/Tokyo"
+
+- name: Prepare hosts config
+  when: true
+  become: yes
+  template:
+    src: hosts.yml
+    dest: /etc/icinga2/conf.d/hosts.conf 
+
+- name: mysql icingaweb setup
+  shell: |
+    mysql -h {{ MYSQL_HOST }} -P {{ MYSQL_PORT }} -u {{ MYSQL_USER }} -p{{ MYSQL_PASSWORD }} mysql -e 'CREATE DATABASE if not exists icingaweb2'
+    mysql -h {{ MYSQL_HOST }} -P {{ MYSQL_PORT }} -u {{ MYSQL_USER }} -p{{ MYSQL_PASSWORD }} mysql -e "CREATE USER 'icingaweb2'@'%' IDENTIFIED BY 'icingaweb2'"
+    mysql -h {{ MYSQL_HOST }} -P {{ MYSQL_PORT }} -u {{ MYSQL_USER }} -p{{ MYSQL_PASSWORD }} mysql -e "GRANT ALL ON icingaweb2.* TO 'icingaweb2'@'%'"
+    mysql -h {{ MYSQL_HOST }} -P {{ MYSQL_PORT }} -u {{ MYSQL_USER }} -p{{ MYSQL_PASSWORD }} mysql -e "FLUSH PRIVILEGES"
+
+- name: Setting Up Icinga 2 REST API
+  when: true
+  become: yes
+  shell: icingacli setup token create
+
+- name: Restart service
+  become: yes
+  service:
+    name: "{{ item  }}"
+    state: restarted
+  loop:
+    - apache2
+    - icinga2
+
+# Reference:
+# https://sleeplessbeastie.eu/2018/01/15/how-to-install-icinga2-and-icingaweb2/
+# https://computingforgeeks.com/install-icinga2-monitoring-tool-on-ubuntu-linux/

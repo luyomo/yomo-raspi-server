@@ -1,0 +1,25 @@
+- name: icinga installation
+  become: yes
+  apt:
+      name: "{{item}}"
+      state: absent
+  loop:
+    - icinga2
+    - icinga2-ido-mysql
+    - monitoring-plugins
+    - mariadb-client-10.3
+    - icingaweb2 
+    - icingacli
+    - icingaweb2 
+    - libapache2-mod-php 
+    - icingacli
+
+- name: Remove unnecessary files
+  become: yes
+  file:
+    path: "{{ item  }}"
+    state: absent
+  loop:
+    - /etc/icingaweb2
+    - /etc/icinga2
+

@@ -19,3 +19,15 @@
       - cht
   roles:
       - ./roles/cht
+
+- name: Emacs compilation
+  hosts: compiler
+  tags: emacs
+  roles:
+      - ./roles/emacs
+
+- name: Emacs installation
+  hosts: workstation
+  tags: emacs
+  roles:
+      - ./roles/emacs
