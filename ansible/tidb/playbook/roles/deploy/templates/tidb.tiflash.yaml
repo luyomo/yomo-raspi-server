@@ -1,0 +1,51 @@
+global:
+  user: "tidb"
+  ssh_port: 22
+  deploy_dir: "/DATA/deploy"
+  data_dir: "/DATA/data"
+
+server_configs:
+  pd:
+    replication.enable-placement-rules: true
+
+pd_servers:
+  - host: 192.168.1.110
+    arch: "{{ ARCH }}"
+  - host: 192.168.1.111
+    arch: "{{ ARCH }}"
+  - host: 192.168.1.112
+    arch: "{{ ARCH }}"
+
+tidb_servers:
+  - host: 192.168.1.108
+    arch: "{{ ARCH }}"
+  - host: 192.168.1.109
+    arch: "{{ ARCH }}"
+
+tikv_servers:
+  - host: 192.168.1.101
+    arch: "{{ ARCH }}"
+  - host: 192.168.1.102
+    arch: "{{ ARCH }}"
+  - host: 192.168.1.103
+    arch: "{{ ARCH }}"
+
+tiflash_servers:
+  - host: 192.168.1.104
+    arch: "{{ ARCH }}"
+  - host: 192.168.1.105
+    arch: "{{ ARCH }}"
+  - host: 192.168.1.106
+    arch: "{{ ARCH }}"
+
+monitoring_servers:
+  - host: 192.168.1.109
+    arch: "{{ ARCH }}"
+
+grafana_servers:
+  - host: 192.168.1.109
+    arch: "{{ ARCH }}"
+
+alertmanager_servers:
+  - host: 192.168.1.109
+    arch: "{{ ARCH }}"

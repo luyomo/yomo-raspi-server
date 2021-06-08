@@ -5,11 +5,10 @@
       state: absent
   loop:
     - icinga2
+    - icinga2-doc
     - icinga2-ido-mysql
     - monitoring-plugins
     - mariadb-client-10.3
-    - icingaweb2 
-    - icingacli
     - icingaweb2 
     - libapache2-mod-php 
     - icingacli
@@ -22,4 +21,5 @@
   loop:
     - /etc/icingaweb2
     - /etc/icinga2
+    - /usr/share/doc/icinga2-doc
 

@@ -13,15 +13,15 @@
     - libapache2-mod-php 
     - icingacli
 
-- name: mysql ido configuration
-  become: yes
-  when: true
-  template:
-    src: "ido-mysql.conf"
-    dest: /etc/icinga2/features-available/ido-mysql.conf
-    owner: nagios
-    group: nagios
-    mode: "0400"
+      #- name: mysql ido configuration
+      #  become: yes
+      #  when: true
+      #  template:
+      #    src: "ido-mysql.conf"
+      #    dest: /etc/icinga2/features-available/ido-mysql.conf
+      #    owner: nagios
+      #    group: nagios
+      #    mode: "0400"
 
 - name: mysql objects preparation
   when: true

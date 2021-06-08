@@ -10,8 +10,20 @@
 - name: 01.02 templates deployment
   become: yes
   template:
-    src: "tidb.minimum.yaml.template"
-    dest: "/home/tidb/workstation/config/tidb.minimum.yaml"
+    src: "{{ item.src  }}"
+    dest: "/home/tidb/workstation/config/{{ item.dest }}"
+    owner: tidb
+    group: tidb
+    mode: "0644"
+  loop:
+    -  { src: "tidb.minimum.yaml"     , dest: "tidb.minimum.yaml" }
+    -  { src: "tidb.tiflash.yaml"     , dest: "tidb.tiflash.yaml" }
+
+- name: 01.03 copy the makefile file
+  become: yes
+  copy:
+    src: Makefile
+    dest: "/home/tidb/workstation/config/Makefile"
     owner: tidb
     group: tidb
     mode: "0644"
