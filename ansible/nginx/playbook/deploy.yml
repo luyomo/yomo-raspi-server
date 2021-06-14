@@ -1,0 +1,7 @@
+---
+- name: Deploy the nginx
+  hosts: nginx
+  tags:
+      - nginx
+  roles:
+      - ./roles/nginx

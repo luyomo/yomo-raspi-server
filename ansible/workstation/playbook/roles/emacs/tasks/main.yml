@@ -1,12 +1,12 @@
 - name: 1.1 emacs - Download emacs source code
-  when: True
+  when: false
   unarchive:
     src: "http://ftp.jaist.ac.jp/pub/GNU/emacs/emacs-{{ EMACS_VERSION }}.tar.xz"
     dest: /tmp
     remote_src: yes
 
 - name: 1.2 compilation
-  when: True
+  when: false
   shell: | 
     sh autogen.sh
     ./configure --prefix={{ INSTALL_DIR }}/emacs/{{ EMACS_VERSION }} --without-x
@@ -16,87 +16,84 @@
     executable: /bin/bash
     chdir: "{{ TMP_DIR }}/emacs-{{ EMACS_VERSION }}"
 
+- name: 1.3 Git checkout
+  when: false
+  ansible.builtin.git:
+    repo: 'https://github.com/syl20bnr/spacemacs.git'
+    dest: /home/pi/.emacs.d
+    version: v0.200.13
 
+- name: 1.4 Set the PATH to run emacs
+  when: false
+  become: yes
+  lineinfile:
+    path: /home/pi/.bashrc.local
+    line: export PATH=/opt/emacs/27.2/bin:$PATH
+
+- name: 1.5 copy service file
+  when: false
+  become: yes
+  copy:
+    src: emacs.service
+    dest: /etc/systemd/system/emacs.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: 1.6 Restart the emacs service
+  when: false
+  become: yes
+  service:
+    name: emacs
+    state: restarted
+
+- name: 1.7.1 Install packages for plantuml
+  when: false
+  become: yes
+  apt:
+    name: "{{ item  }}"
+  loop:
+    - openjdk-11-jre
+    - graphviz
+
+- name: 1.7.2 prepare the directory
+  become: yes
+  file:
+    state: directory
+    path: /opt/emacs/lib
+    owner: root
+    group: root
+    mode: 0755
+
+- name: 1.7.3 Download plantuml
+  become: yes
+  get_url:
+    url: https://sourceforge.net/projects/plantuml/files/plantuml.1.2021.7.jar
+    dest: /opt/emacs/lib/plantuml.1.2021.7.jar
+    owner: root
+    group: root
+
+- name: 1.7.4 Make one soft link to plantuml
+  become: yes
+  file:
+    src: /opt/emacs/lib/plantuml.1.2021.7.jar
+    dest: /opt/emacs/lib/plantuml.jar
+    owner: root
+    group: root
+    state: link
+
+- name: 1.7.5
+  become: yes
+  blockinfile:
+    path: /home/pi/.emacs.d/init.el
+    marker: ";; {mark} ANSIBLE MANAGED BLOCK"
+    block: |
+      (setq org-plantuml-jar-path "/opt/emacs/lib/plantuml.jar")
+      (org-babel-do-load-languages
+        'org-babel-load-languages
+        '((plantuml . t)))
+    
+
+# https://github.com/purcell/emacs.d
 # https://github.com/syl20bnr/spacemacs ~/.emacs.d
 
-
-    #- name: 1.2 tmux - Compile and install the tmux
-    #  when: False
-    #  shell: |
-    #    sh autogen.sh
-    #    ./configure --prefix={{INSTALL_DIR}}/tmux/{{TMUX_VERSION}}
-    #    make
-    #    sudo make install
-    #  args:
-    #    executable: /bin/bash
-    #    chdir: "{{TMP_DIR}}/tmux"
-    #
-    #- name: 2.1 tmux config - Download tmux config repository
-    #  become: yes
-    #  ansible.builtin.git:
-    #    repo: 'https://github.com/gpakosz/.tmux.git'
-    #    dest: "/opt/tmux/.tmux"
-    #
-    #- name: 2.2 tmux config - Create a symbolic link for config file
-    #  ansible.builtin.copy:
-    #    src: /opt/tmux/.tmux/.tmux.conf
-    #    dest: "/home/{{USER}}/.tmux.conf"
-    #    owner: "{{USER}}"
-    #    group: "{{USERGROUP}}"
-    #    mode: '0644'
-    #
-    #- name: 2.3 tmux config - copy tmux local config file
-    #  ansible.builtin.copy:
-    #    src: /opt/tmux/.tmux/.tmux.conf.local
-    #    dest: "/home/{{USER}}/.tmux.conf.local"
-    #    owner: "{{USER}}"
-    #    group: "{{USERGROUP}}"
-    #    mode: '0644'
-    #
-    #- name: 2.4 tmux config - Insert local config into .tmux.conf.local
-    #  blockinfile:
-    #    path: "/home/{{USER}}/.tmux.conf"
-    #    marker: "# {mark} ANSIBLE MANAGED BLOCK "
-    #    block: |
-    #      set -g @plugin 'tmux-plugins/tpm'
-    #      set -g @plugin 'tmux-plugins/tmux-sessionist'
-    #      run '~/.tmux/plugins/tpm/tpm'
-    #
-    #- name: 2.5 tmux config - Insert local config into .tmux.conf.local
-    #  blockinfile:
-    #    path: "/home/{{USER}}/.tmux.conf.local"
-    #    marker: "# {mark} ANSIBLE MANAGED BLOCK "
-    #    block: |
-    #      set-option -g prefix C-q
-    #      set-option -g default-shell /opt/zsh/{{ZSH_VERSION}}/bin/zsh
-    #      set-option -g allow-rename off
-    #      bind-key F12 last-window
-    #      unbind %
-    #      unbind '"'
-    #      unbind l
-    #      unbind Up
-    #      unbind Down
-    #      unbind Left
-    #      unbind Right
-    #      
-    #      bind-key "M-h" select-pane -L
-    #      bind-key "M-l" select-pane -R
-    #      bind-key "M-k" select-pane -U
-    #      bind-key "M-j" select-pane -D
-    #      
-    #      bind-key | split-window -h
-    #      bind-key - split-window -v
-    #      
-    #      setw -g mode-keys vi
-    #      
-    #      bind e setw synchronize on
-    #      bind E setw synchronize off
-    #      
-    #      bind-key F9 send-prefix         # F9 + F9 + key = The key send to the secondary tmux
-    #      bind-key F8 send-keys F9 F12    # F9/F12 + F8   = Switch to the last window on the secondary tmux 
-    #
-    #- name: 3.1 tmux plugins - Download tmux source from github
-    #  become: yes
-    #  ansible.builtin.git:
-    #    repo: 'https://github.com/tmux-plugins/tpm.git'
-    #    dest: "/home/{{USER}}/.tmux/plugins/tpm"

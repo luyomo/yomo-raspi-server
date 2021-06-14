@@ -1,0 +1,6 @@
+- name: 1.1 Download the source code
+  ansible.builtin.unarchive:
+    src: 'http://nginx.org/download/nginx-1.20.1.tar.gz'
+    dest: "/tmp"
+    remote_src: yes
+
