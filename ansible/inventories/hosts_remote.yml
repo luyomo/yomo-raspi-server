@@ -1,0 +1,43 @@
+ base:
+   hosts:
+     172.16.6.158:   # memory: 15G
+     172.16.6.184:   # memory: 15G
+     172.16.6.159:   # memory: 15G
+     172.16.6.160:   # memory: 15G
+     172.16.6.185:   # memory: 15G
+     172.16.6.97:    # memory:  8G
+     172.16.6.96:    # memory:  8G
+     172.16.6.95:    # memory:  8G
+     172.16.6.203:   # memory:  4G
+     172.16.6.219:   # memory:  4G
+     172.16.6.200:   # memory:  4G
+     172.16.6.209:   # memory:  4G
+   vars:
+     ansible_user: ansible 
+
+ tidbController:
+   hosts:
+     172.16.6.203:
+   vars:
+     ansible_connection: ssh
+     ansible_user: tidb 
+     ansible_port: 22
+
+ tidbnode:
+   hosts:
+     172.16.6.158:   # memory: 15G
+     172.16.6.184:   # memory: 15G
+     172.16.6.159:   # memory: 15G
+     172.16.6.160:   # memory: 15G
+     172.16.6.185:   # memory: 15G
+     172.16.6.97:    # memory:  8G
+     172.16.6.96:    # memory:  8G
+     172.16.6.95:    # memory:  8G
+     172.16.6.203:   # memory:  4G
+     172.16.6.219:   # memory:  4G
+     172.16.6.200:   # memory:  4G
+     172.16.6.209:   # memory:  4G
+   vars:
+     ansible_connection: ssh
+     ansible_user: tidb 
+     ansible_port: 22
