@@ -111,11 +111,23 @@
         from_port: 22
         to_port: 22
         cidr_ip: 178.78.3.0/24
+      - proto: tcp
+        from_port: 3306 
+        to_port: 3306
+        cidr_ip: 178.78.1.0/24
+      - proto: tcp
+        from_port: 3306 
+        to_port: 3306
+        cidr_ip: 178.78.2.0/24
+      - proto: tcp
+        from_port: 3306 
+        to_port: 3306
+        cidr_ip: 178.78.3.0/24
     register: sg
 
   - name: Print the securoty group
     debug:
-      msg: "This is the security group {{sg}}"
+      msg: "This is the security group {{sg.group_id}}"
 
   - name: create key pair using key_material obtained using 'file' lookup plugin
     amazon.aws.ec2_key:
@@ -155,19 +167,37 @@
 #    with_indexed_items: "{{ subnets.results | map(attribute='subnet.id') | list }}"
 
 
+  - community.aws.rds_subnet_group:
+      state: present
+      name: dbsubnet-jay4dm
+      region: ap-southeast-1
+      description: The db subnet for the jay4dm
+      subnets: "{{subnets.results | map(attribute='subnet.id') | list}}"
 
+  - name: Check the cluster db parameters
+    shell: aws rds describe-db-cluster-parameter-groups --region "ap-southeast-1" --db-cluster-parameter-group-name jaydbclusterparametergroup
+    ignore_errors: yes
+    register: clusterDBParams
 
+  - name: Create and set the parameter
+    when: clusterDBParams.rc != 0
+    shell: "{{item}}"
+    with_items:
+      - aws rds create-db-cluster-parameter-group --db-cluster-parameter-group-name --region "ap-southeast-1" jaydbclusterparametergroup --db-parameter-group-family aurora-mysql5.7 --description "Jay's cluster parameter group"
+      - aws rds modify-db-cluster-parameter-group --db-cluster-parameter-group-name --region "ap-southeast-1" jaydbclusterparametergroup --parameters "ParameterName=binlog_format,ParameterValue=row,ApplyMethod=pending-reboot"
 
-#  - name: Set up public subnet route table
-#    community.aws.ec2_vpc_route_table:
-#      vpc_id: "{{vpc_id}}"
-#      region: ap-southeast-1
-#      tags:
-#        project: jay4dm
-##    subnets:
-##      - "{{ jumpbox_subnet.subnet.id }}"
-##      - "{{ frontend_subnet.subnet.id }}"
-##      - "{{ vpn_subnet.subnet_id }}"
-#    routes:
-#      - dest: 0.0.0.0/0
-#        gateway_id: "{{ igw.gateway_id }}"
+  - name: Create the db parameter 
+    community.aws.rds_param_group:
+      state: present
+      name: jaydbparametergroup
+      description: "Jay's db parameter group"
+      engine: 'aurora-mysql5.7'
+      params:
+          max_connections: 250
+      region: ap-southeast-1
+
+  - name: Create db cluster
+    shell: "aws rds create-db-cluster --region ap-southeast-1 --db-cluster-parameter-group-name jaydbclusterparametergroup  --db-cluster-identifier aurora-jay --engine aurora-mysql --engine-version 5.7.12 --master-username jay --master-user-password passwd1234 --db-subnet-group-name dbsubnet-jay4dm --vpc-security-group-ids {{sg.group_id}}"
+
+  - name: Create db
+    shell: aws rds create-db-instance --region ap-southeast-1 --db-instance-identifier ins-aurora-jay --db-parameter-group-name jaydbparametergroup --db-cluster-identifier aurora-jay --engine aurora-mysql --db-instance-class db.r4.large

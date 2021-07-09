@@ -312,6 +312,7 @@ $aws ec2 authorize-security-group-ingress --group-id sg-0c36f6fed86132edb --ip-p
 rsync -e 'ssh -i jaytest_KeyPair.pem' jaytest_KeyPair.pem centos@13.115.192.216:~/.
 
 ** Aurora preparation
+*** db subnet group preparation
 aws rds describe-db-subnet-groups
 
 aws rds create-db-subnet-group \
@@ -319,21 +320,24 @@ aws rds create-db-subnet-group \
     --db-subnet-group-description "jay test DB subnet group" \
     --subnet-ids '["subnet-0f7d530506e08cc3e","subnet-0250cefa8a7a492e4","subnet-0256f9a054b0c922f"]'
 
-aws rds create-db-cluster --db-cluster-identifier aurora-jay --engine aurora-mysql \
+*** cluster parameter group preparation
+aws rds create-db-cluster-parameter-group --db-cluster-parameter-group-name jaydbclusterparametergroup --db-parameter-group-family aurora-mysql5.7 --description "Jay's cluster parameter group"
+aws rds modify-db-cluster-parameter-group --db-cluster-parameter-group-name jaydbclusterparametergroup --parameters "ParameterName=binlog_format,ParameterValue=row,ApplyMethod=pending-reboot"
+
+*** db parameter group preparation
+aws rds create-db-parameter-group --db-parameter-group-name jaydbparametergroup --db-parameter-group-family aurora-mysql5.7 --description "Jay's db parameter group"
+aws rds modify-db-parameter-group --db-parameter-group-name jaydbparametergroup --parameters "ParameterName=max_connections,ParameterValue=250,ApplyMethod=immediate"
+
+*** 
+aws rds create-db-cluster --region ap-southeast-1 --db-cluster-identifier aurora-jay --engine aurora-mysql \
      --engine-version 5.7.12 --master-username jay --master-user-password passwd1234 \
      --db-subnet-group-name jaysubnetgroup --vpc-security-group-ids sg-0c36f6fed86132edb
 
 aws rds create-db-instance --db-instance-identifier ins-aurora-jay --db-cluster-identifier aurora-jay --engine aurora-mysql --db-instance-class db.r4.large
 
-
-aws rds create-db-cluster-parameter-group --db-cluster-parameter-group-name jaydbclusterparametergroup --db-parameter-group-family aurora-mysql5.7 --description "Jay's cluster parameter group"
-aws rds create-db-parameter-group --db-parameter-group-name jaydbparametergroup --db-parameter-group-family aurora-mysql5.7 --description "Jay's db parameter group"
-
 aws rds modify-db-instance --db-parameter-group-name jaydbparametergroup --db-instance-identifier ins-aurora-jay
 aws rds modify-db-cluster --db-cluster-identifier aurora-jay --db-cluster-parameter-group-name jaydbclusterparametergroup
 
-aws rds modify-db-parameter-group --db-parameter-group-name jaydbparametergroup --parameters "ParameterName=max_connections,ParameterValue=250,ApplyMethod=immediate"
-aws rds modify-db-cluster-parameter-group --db-cluster-parameter-group-name jaydbclusterparametergroup --parameters "ParameterName=binlog_format,ParameterValue=row,ApplyMethod=pending-reboot"
 
 
 * 
