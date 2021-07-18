@@ -1,0 +1,296 @@
+- name: 01.01 create a VPC with shared tenancy and a couple of tags
+  tags:
+    - vpc
+  amazon.aws.ec2_vpc_net:
+    name: "{{CLUSTER_NAME}}"
+    cidr_block: "{{CIDR_BLOCK}}"
+    region: "{{REGION}}"
+    tags:
+      project: kvtest
+    tenancy: default
+
+- name: 01.02 Get the vpc info
+  tags:
+    - vpc
+    - subnets
+    - gateway
+    - route_table
+    - security_group
+    - basic
+  amazon.aws.ec2_vpc_net_info:
+    filters:
+      "tag:Name": "{{CLUSTER_NAME}}"
+    region: "{{REGION}}"
+  register: vpc_info
+
+- name: 01.03 set the vpc_id fact
+  tags:
+    - vpc
+    - subnets
+    - gateway
+    - route_table
+    - security_group
+    - basic
+  set_fact:
+    vpc_id: "{{vpc_info.vpcs[0].vpc_id}}"
+  when: (vpc_info.vpcs is defined) and (vpc_info.vpcs|length > 0)
+
+- name: 01.04 Print the vpc's id
+  tags:
+    - vpc
+  ansible.builtin.debug:
+    msg:  "The vpc id is << {{vpc_id}} >> "
+  when: vpc_id is defined
+
+- name: 02. Get all the available zones from the current region
+  tags:
+    - zones
+    - subnets
+  amazon.aws.aws_az_info:
+    region: "{{REGION}}"
+  register: zones
+
+- name: 03.01 Create the subnet for each zone
+  tags:
+    - subnets
+  amazon.aws.ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{ vpc_id }}"
+    cidr: "{{ CIDR_BLOCK | ansible.netcommon.ipsubnet(24, item.0 + 1) }}"
+    region: "{{ REGION }}"
+    az: "{{ item.1.zone_name }}"
+    tags:
+      Name: "{{CLUSTER_NAME}}-0{{item.0}}"
+      project: "{{CLUSTER_NAME}}"
+  with_indexed_items: "{{zones.availability_zones}}"
+  register: subnets
+
+- name: 03.02 Get all the subnets
+  tags:
+    - subnets
+    - route_table
+    - security_group
+    - basic
+  amazon.aws.ec2_vpc_subnet_info:
+    filters:
+      vpc-id: "{{ vpc_id }}"
+    region: "{{ REGION }}"
+  register: subnets
+
+- name: 03.03 Print all the subnets
+  tags:
+    - subnets
+    - route_table
+  ansible.builtin.debug:
+    msg:  "The subnets info is << {{ item.cidr_block }} >> "
+  with_items: "{{subnets.subnets}}"
+
+
+- name: 04.01 Create Internet gateway with tags
+  tags:
+    - gateway
+    - route_table
+  community.aws.ec2_vpc_igw:
+    vpc_id: "{{vpc_id}}"
+    state: present
+    tags:
+      project: "{{ CLUSTER_NAME }}"
+      Name: "gw-{{ CLUSTER_NAME }}"
+    region: "{{REGION}}"
+  register: igw
+
+- name: 04.02 Gather information about a filtered list of Internet Gateways
+  tags:
+    - route_table
+  community.aws.ec2_vpc_igw_info:
+    region: "{{ REGION }}"
+    filters:
+        "tag:Name": "gw-{{ CLUSTER_NAME }}"
+  register: igw
+
+- name: 04.02 Print the gateway
+  tags:
+    - gateway
+    - route_table
+  ansible.builtin.debug:
+    msg:  "The gateway info is << {{ igw.internet_gateways }} >> "
+  when: igw is defined
+
+- name: 05.01 Create route table for private
+  tags:
+    - route_table
+  community.aws.ec2_vpc_route_table:
+    region: "{{REGION}}"
+    vpc_id: "{{vpc_id}}"
+    tags:
+      Name: "Private-{{CLUSTER_NAME}}"
+    subnets: "{{subnets.subnets | map(attribute='id') | list}}"
+
+- name: 05.02 Create route table for public
+  tags:
+    - route_table
+  community.aws.ec2_vpc_route_table:
+    region: "{{REGION}}"
+    vpc_id: "{{vpc_id}}"
+    tags:
+      Name: "Public-{{CLUSTER_NAME}}"
+    subnets: "{{subnets.subnets | map(attribute='id') | first}}"
+    routes:
+    - dest: 0.0.0.0/0
+      gateway_id: "{{ igw.internet_gateways[0].internet_gateway_id }}"
+
+- name: 06.01 Create the security group for VPC
+  tags:
+    - security_group
+  debug:
+    msg: "This is the test {{subnets.subnets | map(attribute='cidr_block') | list}} "
+
+- name: List the subnets rules
+  tags:
+    - security_group
+  set_fact:
+    rules: "{{ rules | default([]) + [ {'proto': 'tcp', 'from_port': 0, 'to_port': 65535, 'cidr_ip': item } ] }}"
+  with_items: "{{ subnets.subnets | map(attribute='cidr_block') | list }}"
+
+- name: Added the public ip to open the access
+  tags:
+    - security_group
+  set_fact:
+    rules: "{{ rules + [{'proto': 'tcp', 'from_port': 22, 'to_port':22, 'cidr_ip': '118.241.130.235/32' }] }}"
+
+- name: 06.01 Create the security group for VPC
+  tags:
+    - security_group
+  debug:
+    msg: "This is the test {{ rules }} "
+
+- name: 06.01 Create the security group for VPC
+  tags:
+    - security_group
+  amazon.aws.ec2_group:
+    name: "sg.{{CLUSTER_NAME}}"
+    description: The security group for jay4em
+    vpc_id: "{{vpc_id}}"
+    region: "{{REGION}}"
+    tags:
+      Name: "sg-{{CLUSTER_NAME}}"
+    rules: "{{ rules }}"
+  register: sg
+
+- name: 06.02 Print the securoty group
+  tags:
+    - security_group
+  debug:
+    msg: "This is the security group {{sg.group_id}}"
+
+- name: 07.01 create key pair using key_material obtained using file lookup plugin
+  tags:
+    - sshkeys
+  amazon.aws.ec2_key:
+    name: "{{CLUSTER_NAME}}_keypair"
+    key_material: "{{ lookup('file', '/home/pi/.ssh/id_rsa.pub') }}"
+    region: "{{REGION}}"
+  register: keypair
+
+- name: 07.02 Print the key pair
+  tags:
+    - sshkeys
+  debug:
+    msg: "This is the security group {{keypair}}"
+
+
+- name: Gather information about any instance with a tag key Name and value Example
+  tags:
+    - workstation
+  community.aws.ec2_instance_info:
+    filters:
+      "tag:Name": "ins.{{CLUSTER_NAME}}.ws"
+      instance-state-name: [ "running"]
+  register: ws_status
+
+- name: Check the status
+  tags:
+    - workstation
+  debug:
+    msg: "This is the server status {{ ws_status.instances | length }}"
+
+- name: 08.01 workspace
+  when: ws_status.instances | length == 0
+  tags:
+    - workstation
+  amazon.aws.ec2:
+    key_name: "{{CLUSTER_NAME}}_keypair"
+    instance_type: t2.micro
+    image: "ami-{{WS_IMAGE_ID}}"
+    wait: yes
+    vpc_subnet_id: "{{subnets.subnets | map(attribute='id') | first}}"
+    assign_public_ip: yes
+    group: "sg.{{CLUSTER_NAME}}"
+    region: "{{REGION}}"
+    count: 1
+    instance_tags:
+      Name: "ins.{{CLUSTER_NAME}}.ws"
+
+- name: Gather information about any instance with a tag key Name and value Example
+  tags:
+    - pd
+  community.aws.ec2_instance_info:
+    filters:
+      "tag:Name": "ins.{{CLUSTER_NAME}}.pd"
+      instance-state-name: [ "running"]
+  register: pd_status
+
+- name: Check the status
+  tags:
+    - pd
+  debug:
+    msg: "This is the pd server status {{ pd_status.instances  | length }}"
+
+- name: 08.01 workspace
+  when: pd_status.instances | length == 0
+  tags:
+    - pd
+  amazon.aws.ec2:
+    key_name: "{{CLUSTER_NAME}}_keypair"
+    instance_type: m5.xlarge
+    image: "ami-{{WS_IMAGE_ID}}"
+    wait: yes
+    vpc_subnet_id: "{{ item.id }}"
+    group: "sg.{{CLUSTER_NAME}}"
+    region: "{{REGION}}"
+    count: 1
+    instance_tags:
+      Name: "ins.{{CLUSTER_NAME}}.pd"
+  with_items: "{{ subnets.subnets }}"
+
+- name: Gather information about any instance with a tag key Name and value Example
+  tags:
+    - kv
+  community.aws.ec2_instance_info:
+    filters:
+      "tag:Name": "ins.{{CLUSTER_NAME}}.kv"
+      instance-state-name: [ "running"]
+  register: kv_status
+
+- name: Check the status
+  tags:
+    - kv
+  debug:
+    msg: "This is the pd server status {{ kv_status.instances  | length }}"
+
+- name: 08.01 workspace
+  when: kv_status.instances | length == 0
+  tags:
+    - kv
+  amazon.aws.ec2:
+    key_name: "{{CLUSTER_NAME}}_keypair"
+    instance_type: c5d.4xlarge
+    image: "ami-{{WS_IMAGE_ID}}"
+    wait: yes
+    vpc_subnet_id: "{{ item.id }}"
+    group: "sg.{{CLUSTER_NAME}}"
+    region: "{{REGION}}"
+    count: 1
+    instance_tags:
+      Name: "ins.{{CLUSTER_NAME}}.kv"
+  with_items: "{{ subnets.subnets }}"
