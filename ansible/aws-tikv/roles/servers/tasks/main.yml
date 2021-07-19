@@ -199,7 +199,7 @@
     msg: "This is the security group {{keypair}}"
 
 
-- name: Gather information about any instance with a tag key Name and value Example
+- name: 08.01 Gather information about the workstation
   tags:
     - workstation
   community.aws.ec2_instance_info:
@@ -208,19 +208,20 @@
       instance-state-name: [ "running"]
   register: ws_status
 
-- name: Check the status
+- name: 08.02 Check the status
   tags:
     - workstation
   debug:
     msg: "This is the server status {{ ws_status.instances | length }}"
 
-- name: 08.01 workspace
+- name: 08.03 Generate the workspace instance if it does not exist
   when: ws_status.instances | length == 0
   tags:
     - workstation
   amazon.aws.ec2:
     key_name: "{{CLUSTER_NAME}}_keypair"
-    instance_type: t2.micro
+    #instance_type: t2.micro
+    instance_type: c5d.4xlarge
     image: "ami-{{WS_IMAGE_ID}}"
     wait: yes
     vpc_subnet_id: "{{subnets.subnets | map(attribute='id') | first}}"
@@ -231,7 +232,7 @@
     instance_tags:
       Name: "ins.{{CLUSTER_NAME}}.ws"
 
-- name: Gather information about any instance with a tag key Name and value Example
+- name: 09.01 Gather information about the pd instance
   tags:
     - pd
   community.aws.ec2_instance_info:
@@ -240,13 +241,13 @@
       instance-state-name: [ "running"]
   register: pd_status
 
-- name: Check the status
+- name: 09.02 Check the pd instance
   tags:
     - pd
   debug:
     msg: "This is the pd server status {{ pd_status.instances  | length }}"
 
-- name: 08.01 workspace
+- name: 09.03 Generate the pd instance
   when: pd_status.instances | length == 0
   tags:
     - pd
@@ -263,7 +264,7 @@
       Name: "ins.{{CLUSTER_NAME}}.pd"
   with_items: "{{ subnets.subnets }}"
 
-- name: Gather information about any instance with a tag key Name and value Example
+- name: 10.01 Gather the information about the kv instance
   tags:
     - kv
   community.aws.ec2_instance_info:
@@ -272,13 +273,13 @@
       instance-state-name: [ "running"]
   register: kv_status
 
-- name: Check the status
+- name: 10.02 Check the kv instance
   tags:
     - kv
   debug:
     msg: "This is the pd server status {{ kv_status.instances  | length }}"
 
-- name: 08.01 workspace
+- name: 10.03 Generate the kv instances
   when: kv_status.instances | length == 0
   tags:
     - kv
