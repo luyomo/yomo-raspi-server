@@ -98,6 +98,8 @@
     name:
       - mariadb
       - sysbench
+      - git
+      - gcc
 
 - name: 12.01 Golang installation
   become: yes
@@ -105,6 +107,17 @@
     src: https://golang.org/dl/go1.16.6.linux-amd64.tar.gz
     remote_src: yes
     dest: /usr/local
+
+- name: 12.02 Add go path
+  lineinfile:
+    path: ~/.bashrc
+    line: "export PATH=/usr/local/go/bin:$PATH"
+
+- name: 12.02 Prepare the directory for ycsn workload
+  become: yes
+  file:
+    path: /etc/ycsb
+    state: directory
 
 - name: 12.02 Download git source code
   ansible.builtin.git:
@@ -118,6 +131,7 @@
   with_items:
     - make
     - sudo cp bin/go-ycsb /usr/local/bin/
+    - sudo cp -r workloads /etc/ycsb/
 
 - name: 13 Resource clean
   become: yes

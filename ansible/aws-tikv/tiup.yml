@@ -10,4 +10,4 @@
   gather_facts: True
 
   roles:
-      - ./roles/pd
+      - ../tidb/playbook/roles/install

@@ -27,3 +27,9 @@ pd:
 
 kv:
 	ansible-playbook -i inventories/hosts.yml servers.yml --tags "kv,basic"
+
+ycsb:
+	ansible-playbook -i inventories/hosts.yml pd.yml
+
+tiup:
+	ansible-playbook -i inventories/hosts.yml tiup.yml --vault-password-file .passwd

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+/usr/local/bin/go-ycsb run tikv \
+    -P /etc/ycsb/workloads/workloadc \
+    -p verbose=false -p debug.pprof=":6060" \
+    -p tikv.pd="{{ PD_IPS | first }}:2379" -p tikv.type="raw" \
+    -p operationcount=100000 -p recordcount=100000 \
+    -p threadcount=500

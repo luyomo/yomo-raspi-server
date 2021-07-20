@@ -101,6 +101,7 @@
 
 - name: 04.02 Gather information about a filtered list of Internet Gateways
   tags:
+    - gateway
     - route_table
   community.aws.ec2_vpc_igw_info:
     region: "{{ REGION }}"
@@ -231,6 +232,7 @@
     count: 1
     instance_tags:
       Name: "ins.{{CLUSTER_NAME}}.ws"
+      component: "workstation"
 
 - name: 09.01 Gather information about the pd instance
   tags:
@@ -262,6 +264,7 @@
     count: 1
     instance_tags:
       Name: "ins.{{CLUSTER_NAME}}.pd"
+      component: "pd"
   with_items: "{{ subnets.subnets }}"
 
 - name: 10.01 Gather the information about the kv instance
@@ -294,4 +297,5 @@
     count: 1
     instance_tags:
       Name: "ins.{{CLUSTER_NAME}}.kv"
+      component: "kv"
   with_items: "{{ subnets.subnets }}"

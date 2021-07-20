@@ -5,10 +5,10 @@ global:
   data_dir: "/DATA/tidb-data"
 server_configs: {}
 pd_servers:
-  - host: 178.80.1.219
-  - host: 178.80.2.212
-  - host: 178.80.3.68
+{% for ip in PD_IPS %}
+  - host: {{ ip }}
+{% endfor %}
 tikv_servers:
-  - host: 178.80.1.135
-  - host: 178.80.2.23
-  - host: 178.80.3.149
+{% for ip in KV_IPS %}
+  - host: {{ ip }}
+{% endfor %}

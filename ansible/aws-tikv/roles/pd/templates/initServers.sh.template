@@ -1,0 +1,18 @@
+#!/bin/bash
+
+HOSTS="{{ ALL_CLUSTER_IPS | join(' ') }}"
+
+for host in $HOSTS
+do
+  ssh $host "sudo mkdir /DATA"
+  ssh $host "sudo chown -R ec2-user:ec2-user /DATA"
+done
+
+KV_HOSTS="{{ KV_IPS | join(' ') }}"
+for host in $KV_HOSTS
+do
+  ssh $host "printf 'o\nn\np\n1\n\n\nw\n' | sudo fdisk /dev/nvme1n1"
+  ssh $host "sudo mkfs.xfs -f /dev/nvme1n1p1"
+  ssh $host 'echo "$(sudo blkid /dev/nvme1n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab'
+  ssh $host "sudo mount -a"
+done

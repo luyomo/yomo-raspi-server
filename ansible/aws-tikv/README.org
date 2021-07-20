@@ -3,6 +3,9 @@
   - Install the tiup resource to the workstation
   - Install the tiup config file
 
+* todo
+Replace the ssh key in the aws servers role
+
 export AWS_ACCESS_KEY_ID='-- REMOVED --'
 export AWS_SECRET_ACCESS_KEY='-- REMOVED --'
 

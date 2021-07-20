@@ -1,0 +1,34 @@
+- name: 02 Gather information about the servers
+  community.aws.ec2_instance_info:
+    filters:
+      "tag:Name": "*{{CLUSTER_NAME}}*"
+      instance-state-name: [ "running"]
+    region: "{{REGION}}"
+  register: aws_servers 
+
+- name: Set the workstation's ip
+  set_fact:
+    WS_IP: "{{item.public_ip_address}}"
+  with_items: "{{ aws_servers.instances | selectattr('tags.component' , 'equalto', 'workstation') | list }}"
+
+- name: Set the pd's ips
+  set_fact:
+    PD_IPS: "{{ PD_IPS | default([]) + [ item.private_ip_address ] }}"
+  with_items: "{{ aws_servers.instances | selectattr('tags.component' , 'equalto', 'pd') | list }}"
+
+- name: Set the kv's ips
+  set_fact:
+    KV_IPS: "{{ KV_IPS | default([]) + [ item.private_ip_address ] }}"
+  with_items: "{{ aws_servers.instances | selectattr('tags.component' , 'equalto', 'kv') | list }}"
+
+- name: 02 Gatther all the ip
+  set_fact:
+    ALL_CLUSTER_IPS: "{{ ALL_CLUSTER_IPS | default([]) + [ item.private_ip_address ] }}"
+  with_items: "{{aws_servers.instances}}"
+
+- name: Add a host alias that we reach through a tunnel (Ansible 1.9 and older)
+  add_host:
+    name: aws_workstation
+    ansible_ssh_host: "{{WS_IP}}"
+    ansible_ssh_user: 'ec2-user'
+    ansible_ssh_port: '22'
