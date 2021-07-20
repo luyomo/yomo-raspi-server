@@ -1,1 +1,2 @@
 ARCH: "arm64"
+TIDB_USER: ec2-user

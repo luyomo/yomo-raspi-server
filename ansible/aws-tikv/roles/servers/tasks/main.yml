@@ -212,7 +212,7 @@
   tags:
     - workstation
   debug:
-    msg: "This is the server status {{ ws_status.instances | length }}"
+    msg: "This is the server status {{ ws_status.instances }}"
 
 - name: 08.03 Generate the workspace instance if it does not exist
   when: ws_status.instances | length == 0

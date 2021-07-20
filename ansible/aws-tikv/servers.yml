@@ -1,0 +1,7 @@
+# demo_setup.yml
+
+- hosts: servers
+  gather_facts: False
+
+  roles:
+      - ./roles/servers

@@ -1,0 +1,4 @@
+- name: print the host name
+  debug:
+    msg: "This is the host name call {{inventory_hosts}}"
+

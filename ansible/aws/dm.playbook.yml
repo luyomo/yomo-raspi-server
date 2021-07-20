@@ -1,0 +1,18 @@
+# demo_setup.yml
+
+- hosts: dmserver
+  gather_facts: False
+
+  tasks:
+  - name: Download dm binary
+    become: true
+    unarchive:
+      src: https://download.pingcap.org/dm-v1.0.2-linux-amd64.tar.gz
+      dest: /opt
+      remote_src: yes
+
+  - name: Added the bin search path to bashrc
+    lineinfile:
+        line: "export PATH=/opt/dm-v1.0.2-linux-amd64/bin:$PATH"
+        path: ~/.bashrc
+

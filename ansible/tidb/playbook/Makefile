@@ -1,5 +1,6 @@
-install:
-	ansible-playbook deploy.yml -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3' --vault-password-file .passwd --tags bin
+tiup:
+	ansible-playbook deploy.yml -i inventories/hosts.yml --vault-password-file .passwd --tags bin
+	#ansible-playbook deploy.yml -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3' --vault-password-file .passwd --tags bin
 
 init_test:
 	ansible-playbook deploy.yml -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3' --vault-password-file .passwd --diff --check --tags env

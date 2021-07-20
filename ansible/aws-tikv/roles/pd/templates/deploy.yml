@@ -1,0 +1,14 @@
+global:
+  user: "ec2-user"
+  ssh_port: 22
+  deploy_dir: "/DATA/tidb-deploy"
+  data_dir: "/DATA/tidb-data"
+server_configs: {}
+pd_servers:
+  - host: 178.80.1.219
+  - host: 178.80.2.212
+  - host: 178.80.3.68
+tikv_servers:
+  - host: 178.80.1.135
+  - host: 178.80.2.23
+  - host: 178.80.3.149

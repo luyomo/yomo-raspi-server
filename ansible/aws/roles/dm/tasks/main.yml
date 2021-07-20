@@ -1,0 +1,35 @@
+- name: Download dm binary
+  become: true
+  unarchive:
+    src: https://download.pingcap.org/dm-v2.0.4-linux-amd64.tar.gz
+    dest: /opt
+    remote_src: yes
+
+- name: Added the bin search path to bashrc
+  lineinfile:
+      line: "export PATH=/opt/dm-v2.0.4-linux-amd64/bin:$PATH"
+      path: ~/.bashrc
+
+- name: Make the file folder for the resource
+  become: true
+  file:
+      path: "/var/dm"
+      state: directory
+      group: root
+      owner: root
+
+- name: Deploy the dm resources
+  become: true
+  template:
+      src: "{{item}}"
+      dest: "/var/dm/{{item}}"
+      mode: '0644'
+  with_items:
+      - dm-master.toml
+      - dm-worker.toml
+      - source.yaml
+      - task.yaml
+
+- name: Print the hostname
+  debug:
+      msg: "This is the hostnane {{inventory_hostname}}"

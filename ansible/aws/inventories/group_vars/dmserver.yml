@@ -1,0 +1,12 @@
+SOURCE_INFO:
+    HOST: ins-aurora-jay.c2v2pxjs8mtm.ap-southeast-1.rds.amazonaws.com
+    USER: dmuser
+    PASSWORD: dmuser
+    PORT: 3306
+DEST_INFO:
+    HOST: tidb.7976c5f3.8a20149b.ap-southeast-1.shared.aws.tidbcloud.com
+    USER: root
+    PASSWORD: passwd1234
+    PORT: 4000
+DMMASTER:
+    IP: 178.78.1.84

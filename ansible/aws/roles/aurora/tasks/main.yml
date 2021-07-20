@@ -1,0 +1,249 @@
+- name: create a VPC with dedicated tenancy and a couple of tags
+  amazon.aws.ec2_vpc_net:
+    name: "{{CLUSTER_NAME}}"
+    cidr_block: "{{CIDR_BLOCK}}"
+    region: "{{REGION}}"
+    tags:
+      project: dmtest
+    tenancy: default
+
+- name: Get the vpc info
+  amazon.aws.ec2_vpc_net_info:
+    filters:
+      "tag:Name": "{{CLUSTER_NAME}}"
+    region: "{{REGION}}"
+  register: vpc_info
+
+- name: set the vpc_id fact
+  set_fact:
+    vpc_id: "{{vpc_info.vpcs[0].vpc_id}}"
+  when: (vpc_info.vpcs is defined) and (vpc_info.vpcs|length > 0)
+
+- name: Print the vpc's id
+  ansible.builtin.debug:
+    msg:  "The vpc id is << {{vpc_id}} >> "
+  when: vpc_id is defined
+
+- amazon.aws.aws_az_info:
+    region: "{{REGION}}"
+  register: zones
+
+- name: Create the subnet
+  amazon.aws.ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{vpc_id}}"
+    cidr: "{{ CIDR_BLOCK | ansible.netcommon.ipsubnet(24, item.0 + 1) }}"
+    region: "{{REGION}}"
+    az: "{{item.1.zone_name}}"
+    tags:
+      Name: "{{CLUSTER_NAME}}-0{{item.0}}"
+      project: "{{CLUSTER_NAME}}"
+  with_indexed_items: "{{zones.availability_zones}}"
+  register: subnets
+
+- name: Print all the subnets
+  ansible.builtin.debug:
+    msg:  "The subnets info is << {{item.subnet.cidr_block}} >> "
+  with_items: "{{subnets.results}}"
+
+- name: Create Internet gateway with tags
+  community.aws.ec2_vpc_igw:
+    vpc_id: "{{vpc_id}}"
+    state: present
+    tags:
+      project: "{{CLUSTER_NAME}}"
+      Name: "gw-{{CLUSTER_NAME}}"
+    region: "{{REGION}}"
+  register: igw
+
+- name: Print the gateway
+  ansible.builtin.debug:
+    msg:  "The gateway info is << {{igw}} >> "
+  when: igw is defined
+
+- name: Create route table for private
+  community.aws.ec2_vpc_route_table:
+    region: "{{REGION}}"
+    vpc_id: "{{vpc_id}}"
+    tags:
+      Name: "Private-{{CLUSTER_NAME}}"
+    subnets: "{{subnets.results | map(attribute='subnet.id') | list}}"
+
+- name: Create route table for public
+  community.aws.ec2_vpc_route_table:
+    region: "{{REGION}}"
+    vpc_id: "{{vpc_id}}"
+    tags:
+      Name: "Public-{{CLUSTER_NAME}}"
+    subnets: "{{subnets.results | map(attribute='subnet.id') | first}}"
+    routes:
+    - dest: 0.0.0.0/0
+      gateway_id: "{{ igw.gateway_id }}"
+
+- name: Create the security group for VPC
+  amazon.aws.ec2_group:
+    name: "sg.{{CLUSTER_NAME}}"
+    description: The security group for jay4em
+    vpc_id: "{{vpc_id}}"
+    region: "{{REGION}}"
+    tags:
+      Name: "sg-{{CLUSTER_NAME}}"
+    rules:
+    - proto: tcp
+      from_port: 22
+      to_port: 22
+      cidr_ip: 118.241.130.235/32
+    - proto: tcp
+      from_port: 22
+      to_port: 22
+      cidr_ip: 178.79.1.0/24
+    - proto: tcp
+      from_port: 22
+      to_port: 22
+      cidr_ip: 178.79.2.0/24
+    - proto: tcp
+      from_port: 22
+      to_port: 22
+      cidr_ip: 178.79.3.0/24
+    - proto: tcp
+      from_port: 3306 
+      to_port: 3306
+      cidr_ip: 178.79.1.0/24
+    - proto: tcp
+      from_port: 3306 
+      to_port: 3306
+      cidr_ip: 178.79.2.0/24
+    - proto: tcp
+      from_port: 3306 
+      to_port: 3306
+      cidr_ip: 178.79.3.0/24
+  register: sg
+
+- name: Print the securoty group
+  debug:
+    msg: "This is the security group {{sg.group_id}}"
+
+- name: create key pair using key_material obtained using file lookup plugin
+  amazon.aws.ec2_key:
+    name: "{{CLUSTER_NAME}}_keypair"
+    key_material: "{{ lookup('file', '/home/pi/.ssh/id_rsa.pub') }}"
+    region: "{{REGION}}"
+  register: keypair
+
+- name: Print the key pair
+  debug:
+    msg: "This is the security group {{keypair}}"
+
+- amazon.aws.ec2:
+    key_name: "{{CLUSTER_NAME}}_keypair"
+    instance_type: t2.micro
+    image: "ami-{{IMAGE_ID}}"
+    wait: yes
+    vpc_subnet_id: "{{subnets.results | map(attribute='subnet.id') | first}}"
+    assign_public_ip: yes
+    group: "sg.{{CLUSTER_NAME}}"
+    region: "{{REGION}}"
+    count: 1
+    instance_tags:
+      Name: "ins.{{CLUSTER_NAME}}"
+
+#  - amazon.aws.ec2:
+#      key_name: "{{CLUSTER_NAME}}_keypair"
+#      instance_type: t2.micro
+#      image: "ami-{{IMAGE_ID}}""
+#      wait: yes
+#      vpc_subnet_id: "{{item.1}}"
+#      group: "sg.{{CLUSTER_NAME}}"
+#      region: "{{REGION}}"
+#      count: 1
+#      instance_tags:
+#        Name: "ins.{{CLUSTER_NAME}}.{{item.0}}"
+#    with_indexed_items: "{{ subnets.results | map(attribute='subnet.id') | list }}"
+
+
+- community.aws.rds_subnet_group:
+    state: present
+    name: "dbsubnet-{{CLUSTER_NAME}}"
+    region: "{{REGION}}"
+    description: "The db subnet for the {{CLUSTER_NAME}}"
+    subnets: "{{subnets.results | map(attribute='subnet.id') | list}}"
+
+- name: Check the cluster db parameters
+  shell: aws rds describe-db-cluster-parameter-groups --region "{{REGION}}" --db-cluster-parameter-group-name jaydbclusterparametergroup
+  ignore_errors: yes
+  register: clusterDBParams
+
+- name: Create and set the parameter
+  when: clusterDBParams.rc != 0
+  shell: "{{item}}"
+  with_items:
+    - "aws rds create-db-cluster-parameter-group --db-cluster-parameter-group-name --region {{REGION}} jaydbclusterparametergroup --db-parameter-group-family aurora-mysql5.7 --description 'Jay cluster parameter group'"
+    - "aws rds modify-db-cluster-parameter-group --db-cluster-parameter-group-name --region {{REGION}} jaydbclusterparametergroup --parameters 'ParameterName=binlog_format,ParameterValue=row,ApplyMethod=pending-reboot'"
+
+- name: Create the db parameter 
+  community.aws.rds_param_group:
+    state: present
+    name: jaydbparametergroup
+    description: "Jay's db parameter group"
+    engine: 'aurora-mysql5.7'
+    params:
+        max_connections: 250
+    region: "{{REGION}}"
+
+- name: Create db cluster
+  when: False
+  shell: "aws rds create-db-cluster --region {{REGION}} --db-cluster-parameter-group-name jaydbclusterparametergroup  --db-cluster-identifier aurora-jay --engine aurora-mysql --engine-version 5.7.12 --master-username jay --master-user-password passwd1234 --db-subnet-group-name dbsubnet-{{CLUSTER_NAME}} --vpc-security-group-ids {{sg.group_id}}"
+
+- name: Create db
+  when: False
+  shell: "aws rds create-db-instance --region {{REGION}} --db-instance-identifier ins-aurora-jay --db-parameter-group-name jaydbparametergroup --db-cluster-identifier aurora-jay --engine aurora-mysql --db-instance-class db.r4.large"
+
+- name: Create the s3 bucket
+  when: True
+  amazon.aws.s3_bucket:
+    name: "s3-{{CLUSTER_NAME}}"
+    region: "{{REGION}}"
+
+- name: Create policy to grant permission to S3
+  when: False
+  shell: |
+    aws iam create-policy  --policy-name s3policy{{CLUSTER_NAME}} --policy-document '{
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Sid": "s3policy{{CLUSTER_NAME}}",
+              "Effect": "Allow",
+              "Action": [
+                  "s3:PutObject*",
+                  "s3:ListBucket",
+                  "s3:GetObject*",
+                  "s3:DeleteObject*",
+                  "s3:GetBucketLocation"
+              ],
+              "Resource": [
+                  "arn:aws:s3:::s3-{{CLUSTER_NAME}}",
+                  "arn:aws:s3:::s3-{{CLUSTER_NAME}}/*"
+              ]
+          }
+      ]
+    }'
+
+- name: create role for export policy
+  when: False
+  shell: |
+    aws iam create-role  --role-name rds-s3-export-role  --assume-role-policy-document '{
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+             "Service": "export.rds.amazonaws.com"
+           },
+          "Action": "sts:AssumeRole"
+        }
+      ] 
+    }'
+  register: s3role
+
+- name: Grant the policy to role
+  shell: "aws iam attach-role-policy --policy-arn arn:aws:iam::729581434105:policy/s3policy{{CLUSTER_NAME}}  --role-name rds-s3-export-role"

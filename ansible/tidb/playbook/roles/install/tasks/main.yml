@@ -18,27 +18,27 @@
   get_url:
     url: https://tiup-mirrors.pingcap.com/install.sh
     dest: /tmp/install.sh
-    owner: tidb
-    group: tidb
+    owner: "{{TIDB_USER}}"
+    group: "{{TIDB_USER}}"
     mode: "0755"
 
 - name: 02.02 tiup installation
   become: yes
-  become_user: tidb
+  become_user: "{{TIDB_USER}}"
   shell: /tmp/install.sh
 
 - name: 02.03 Add the search path into ~/.bashrc
   become: yes 
   lineinfile:
-    path: /home/tidb/.bashrc
-    line: export PATH=/home/tidb/.tiup/bin:$PATH
+    path: "/home/{{TIDB_USER}}/.bashrc"
+    line: "export PATH=/home/{{TIDB_USER}}/.tiup/bin:$PATH"
 
 - name: 03.01 prepare the .ssh folder
   become: yes
   file:
-    path: /home/tidb/.ssh
-    owner: tidb
-    group: tidb
+    path: "/home/{{TIDB_USER}}/.ssh"
+    owner: "{{TIDB_USER}}"
+    group: "{{TIDB_USER}}"
     state: directory
     mode: "0700"
  
@@ -46,34 +46,84 @@
   become: yes
   copy:
      src: "tidb_rsa_key"
-     dest: "/home/tidb/.ssh/id_rsa"
+     dest: "/home/{{TIDB_USER}}/.ssh/id_rsa"
      decrypt: yes
 
 - name: 03.03 config file
   become: yes
   copy:
-    dest: /home/tidb/.ssh/config
+    dest: "/home/{{TIDB_USER}}/.ssh/config"
     content: StrictHostKeyChecking no
-    owner: tidb
-    group: tidb
+    owner: "{{TIDB_USER}}"
+    group: "{{TIDB_USER}}"
     mode: "0600"
 
 - name: Prepare the folder workstation
   become: yes
   ansible.builtin.file:
-    path: /home/tidb/workstation
+    path: "/home/{{TIDB_USER}}/workstation"
     state: directory
-    owner: tidb
-    group: tidb
+    owner: "{{TIDB_USER}}"
+    group: "{{TIDB_USER}}"
 
-- name: Add the sysbench repository
+- name: Download the script to add debian repository
+  when: ansible_os_family == "Debian"
+  get_url:
+    url: https://packagecloud.io/install/repositories/akopytov/sysbench/script.deb.sh
+    dest: /tmp/script.sh
+    mode: '0755'
+
+- name: Download the script to add yum repository
+  when: ansible_os_family in  [ "CentOS" , "RedHat" ]
+  get_url:
+    url: https://packagecloud.io/install/repositories/akopytov/sysbench/script.rpm.sh
+    dest: /tmp/script.sh
+    mode: '0755'
+
+- name: Add the sysbench repository for CentOS
   become: yes
-  shell: curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.deb.sh | sudo bash
+  shell: /tmp/script.sh
 
 - name: Install the required packages
   become: yes
-  apt:
+  when: ansible_os_family == "Debian"
+  ansible.builtin.apt:
     name:
       - mariadb-client
       - sysbench
-    update_cache: yes
+
+- name: Install the required packages
+  become: yes
+  ansible.builtin.package:
+    name:
+      - mariadb
+      - sysbench
+
+- name: 12.01 Golang installation
+  become: yes
+  unarchive:
+    src: https://golang.org/dl/go1.16.6.linux-amd64.tar.gz
+    remote_src: yes
+    dest: /usr/local
+
+- name: 12.02 Download git source code
+  ansible.builtin.git:
+    repo: https://github.com/pingcap/go-ycsb.git
+    dest: /tmp/go-ycsb
+
+- name: 12.03 Compile the source code
+  shell: "{{item}}"
+  args:
+    chdir: /tmp/go-ycsb
+  with_items:
+    - make
+    - sudo cp bin/go-ycsb /usr/local/bin/
+
+- name: 13 Resource clean
+  become: yes
+  file:
+    path: /tmp/go-ycsb
+    state: absent
+  with_items:
+    - /tmp/go-ycsb
+    - /tmp/script.sh

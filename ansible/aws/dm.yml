@@ -1,0 +1,7 @@
+# demo_setup.yml
+
+- hosts: dmserver
+  gather_facts: False
+
+  roles:
+      - ./roles/dm

@@ -1,0 +1,7 @@
+# demo_setup.yml
+
+- hosts: aurora
+  gather_facts: False
+
+  roles:
+      - ./roles/aurora
