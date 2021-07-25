@@ -1,4 +1,19 @@
+- name: Add the user db user to the group 'docker'
+  become: yes
+  ansible.builtin.group:
+    name: mysql
+    state: present
+    gid: 13363
+
+- name: Add the user db user to the group 'docker'
+  become: yes
+  ansible.builtin.user:
+    name: mysql
+    groups: mysql,docker
+
 - name: Pull mariadb images from remote
+  become: yes
+  become_user: mysql
   docker_image:
     name: mariadb
     source: pull
@@ -6,25 +21,34 @@
 - name: directory preparation
   become: yes
   file:
-    path: /var/mariadb/docker-compose
-    owner: pi
-    group: pi
+    path: /var/docker-compose/mariadb
+    owner: mysql
+    group: mysql
     state: directory
 
 - name: docker compose deployment
   become: yes
   template:
     src: "{{ item.src  }}"
-    dest: "/var/mariadb/{{ item.dest }}"
-    owner: pi
-    group: pi
+    dest: "/var/docker-compose/mariadb/{{ item.dest }}"
+    owner: mysql
+    group: mysql
     mode: u=rw,g=r,o=r
   loop:
-    - { src: docker-compose.yml, dest: docker-compose/docker-compose.yml }
+    - { src: docker-compose.yml, dest: docker-compose.yml }
+
+- name: Copy the server conf file
+  become: yes
+  copy:
+    src: 50-server.cnf
+    dest: /var/docker-compose/mariadb/
+    group: mysql
+    owner: mysql
+    mode: '0644'
 
 - name: maraidb client installation
   become: yes
   apt:
       name: "{{item}}"
   loop:
-    - mariadb-client-10.3
+    - mariadb-client-10.0

@@ -1,4 +1,4 @@
-version: '3.1'
+version: '2.0'
 
 services:
   db:
@@ -6,5 +6,11 @@ services:
     ports:
       - 3306:3306
     restart: always
+    volumes:
+      - /var/docker-compose/mariadb/50-server.cnf:/etc/mysql/mariadb.conf.d/50-server.cnf
     environment:
-      MYSQL_ROOT_PASSWORD: passwd
+      MYSQL_ROOT_PASSWORD: {{ MYSQL_ROOT_PASSWD | default('passwd') }}
+      MYSQL_DATABASE: {{ MYSQL_DBNAME | default('testdb') }}
+      MYSQL_USER: {{ MYSQL_DBUSER | default('testdbuser') }}
+      MYSQL_PASSWORD: {{ MYSQL_DBPASSWD | default('testdbpasswd') }}
+

@@ -1,0 +1,32 @@
+[server]
+
+[mysqld]
+
+pid-file                = /run/mysqld/mysqld.pid
+basedir                 = /usr
+datadir                 = /var/lib/mysql
+tmpdir                  = /tmp
+lc-messages-dir         = /usr/share/mysql
+lc-messages             = en_US
+skip-external-locking
+
+server-id              = 1
+log_bin                = /var/log/mysql/mysql-bin.log
+binlog_format          = row
+expire_logs_days       = 10
+#max_binlog_size        = 100M
+#gtid_mode              = on
+#enforce_gtid_consistency=on
+
+#binlog
+
+
+character-set-server  = utf8mb4
+collation-server      = utf8mb4_general_ci
+
+# this is only for embedded server
+[embedded]
+
+[mariadb]
+
+[mariadb-10.6]

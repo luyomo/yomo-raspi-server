@@ -1,0 +1,2 @@
+name = "worker1"
+join = "{{inventory_hostname}}:8261"

@@ -1,0 +1,368 @@
+- name: 01.01  Allocate the gateway
+  tags:
+    - basic
+    - gateway
+  gcp_compute_address:
+    state:                present
+    name:                 'gw-dmm'
+    region:               'asia-northeast1'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    scopes:               "{{ scopes               }}"
+
+- name: 01.02 Gather the dateway info
+  tags:
+    - basic
+    - gateway
+  gcp_compute_address_info:
+    region: 'asia-northeast1'
+    filters:
+    - name = gw-dmm
+    scopes:               "{{ scopes               }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+  register: ipaddr
+
+- name: 01.03 Print the gateway info
+  tags:
+    - basic
+    - gateway
+  debug:
+    var=ipaddr
+
+- name: 02.01 Get all the zones
+  tags:
+    - basic
+    - zones
+  shell: /opt/google-cloud-sdk/bin/gcloud compute zones list --filter="name~'asia-northeast1'" --format 'csv[no-heading](name)'
+  register: zones
+
+- name: 02.02 Set the zones as facts
+  tags:
+    - basic
+    - zones
+  set_fact:
+    zones: "{{zones.stdout.split('\n')}}"
+
+- name: 02.03 Print all the zones
+  tags:
+    - basic
+    - zones
+  debug:
+    var=zones
+
+- name: 03.01 create the subnets
+  tags:
+    - subnets
+    - basic
+  gcp_compute_network:
+    name: network-dmm
+    project:                 "{{ project              }}"
+    auth_kind:               "{{ auth_kind            }}"
+    auto_create_subnetworks: 'true'
+    service_account_file:    "{{ service_account_file }}"
+    state: present
+  register: network
+
+- name: 03.02 Gather the network info
+  tags:
+    - subnets
+    - basic
+  gcp_compute_network_info:
+    filters:
+    - name = network-dmm
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+
+- name: 03.03 Print the network info
+  tags:
+    - subnets
+    - basic
+  debug:
+    var=network
+
+- name: 03.04 create a firewall
+  tags:
+    - subnets
+  gcp_compute_firewall:
+    name: network-dmm
+    network:           "{{ network }}"
+    allowed:
+    - ip_protocol: tcp
+      ports:
+      - '0-65535'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+
+- name: 04.01 Create the disk for workstation 
+  tags:
+    - workstation
+  gcp_compute_disk:
+    name:                 disk-dmm-ws
+    source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
+    size_gb:              20
+    zone:                 'asia-northeast1-a'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+  register: disk_dmm_ws
+
+- name: 04.02 Print the disk for workstation
+  tags:
+    - workstation
+  debug:
+    var=disk_dmm_ws
+
+- name: 04.03 Create the workstation instance
+  tags:
+    - workstation
+  gcp_compute_instance:
+    name:          ins-dmm-ws
+    machine_type:  n1-standard-1
+    disks:
+    - auto_delete: 'true'
+      boot:        'true'
+      source:      "{{ disk_dmm_ws }}"
+    - auto_delete: 'true'
+      interface:   NVME
+      type:        SCRATCH
+      initialize_params:
+        disk_type: local-ssd
+    metadata:
+      startup-script-url: gs:://graphite-playground/bootstrap.sh
+      cost-center: '12345'
+    labels:
+      environment: dmm
+      component:   workstation
+    network_interfaces:
+    - network:            "{{ network              }}"
+      access_configs:
+      - name: External NAT
+        nat_ip:           "{{ ipaddr               }}"
+        type:             ONE_TO_ONE_NAT
+    zone:                 'asia-northeast1-a'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state: present
+
+- name: 05.01 Create the disk for pds
+  tags:
+    - pd
+  gcp_compute_disk:
+    name:                 "disk-dmm-pd-{{ item.0 }}"
+    source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
+    size_gb:              20
+    zone:                 "{{ item.1 }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+    labels:
+      component:          "pd"
+  with_indexed_items: "{{ zones }}"
+  register: disk_dmm_pd
+
+- name: 05.02 Print the disk for pds
+  tags:
+    - pd
+  debug:
+    msg: "The message is {{ disk_dmm_pd.results | length }}"
+
+- name: 05.03 Create the pd instance
+  tags:
+    - pd
+  gcp_compute_instance:
+    name:          "ins-dmm-pd-{{ item.0 }}"
+    machine_type:  n1-standard-1
+    disks:
+    - auto_delete: 'true'
+      boot:        'true'
+      source:      "{{ item.1 }}"
+    - auto_delete: 'true'
+      interface:   NVME
+      type:        SCRATCH
+      initialize_params:
+        disk_type: local-ssd
+    metadata:
+      startup-script-url: gs:://graphite-playground/bootstrap.sh
+      cost-center: '12345'
+    labels:
+      environment: dmm
+      component:   pd
+    network_interfaces:
+    - network:            "{{ network              }}"
+    zone:                 "{{ item.1.item[1]       }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state: present
+  with_indexed_items: "{{ disk_dmm_pd.results }}"
+
+- name: 06.01 Create the disk for kvs
+  tags:
+    - kv
+  gcp_compute_disk:
+    name:                 "disk-dmm-kv-{{ item.0 }}"
+    source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
+    size_gb:              20
+    zone:                 "{{ item.1 }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+    labels:
+      component:          "kv"
+  with_indexed_items: "{{ zones }}"
+  register: disk_dmm_kv
+
+- name: 06.02 Print the disk for kvs
+  tags:
+    - kv
+  debug:
+    msg: "The message is {{ disk_dmm_kv.results | length }}"
+
+- name: 05.03 Create the kv instance
+  tags:
+    - kv
+  gcp_compute_instance:
+    name:          "ins-dmm-kv-{{ item.0 }}"
+    machine_type:  n1-standard-1
+    disks:
+    - auto_delete: 'true'
+      boot:        'true'
+      source:      "{{ item.1 }}"
+    - auto_delete: 'true'
+      interface:   NVME
+      type:        SCRATCH
+      initialize_params:
+        disk_type: local-ssd
+    metadata:
+      startup-script-url: gs:://graphite-playground/bootstrap.sh
+      cost-center: '12345'
+    labels:
+      environment: dmm
+      component:   kv
+    network_interfaces:
+    - network:            "{{ network              }}"
+    zone:                 "{{ item.1.item[1]       }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state: present
+  with_indexed_items: "{{ disk_dmm_kv.results }}"
+
+- name: 07.01 Create the disk for tidbs
+  tags:
+    - tidb
+  gcp_compute_disk:
+    name:                 "disk-dmm-tidb-{{ item.0 }}"
+    source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
+    size_gb:              20
+    zone:                 "{{ item.1 }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+    labels:
+      component:          "tidb"
+  with_indexed_items: "{{ zones }}"
+  register: disk_dmm_tidb
+
+- name: 06.02 Print the disk for tidbs
+  tags:
+    - tidb
+  debug:
+    msg: "The message is {{ disk_dmm_tidb.results | length }}"
+
+- name: 05.03 Create the tidb instance
+  tags:
+    - tidb
+  gcp_compute_instance:
+    name:          "ins-dmm-tidb-{{ item.0 }}"
+    machine_type:  n1-standard-1
+    disks:
+    - auto_delete: 'true'
+      boot:        'true'
+      source:      "{{ item.1 }}"
+    - auto_delete: 'true'
+      interface:   NVME
+      type:        SCRATCH
+      initialize_params:
+        disk_type: local-ssd
+    metadata:
+      startup-script-url: gs:://graphite-playground/bootstrap.sh
+      cost-center: '12345'
+    labels:
+      environment: dmm
+      component:   tidb
+    network_interfaces:
+    - network:            "{{ network              }}"
+    zone:                 "{{ item.1.item[1]       }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state: present
+  with_indexed_items: "{{ disk_dmm_tidb.results }}"
+
+###################################
+- name: 07.01 Create the disk for tidbs
+  tags:
+    - dm
+  gcp_compute_disk:
+    name:                 "disk-dmm-dm-{{ item.0 }}"
+    source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
+    size_gb:              20
+    zone:                 "{{ item.1 }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+    labels:
+      component:          "dm"
+  with_indexed_items: "{{ zones }}"
+  register: disk_dmm_dm
+
+- name: 06.02 Print the disk for tidbs
+  tags:
+    - dm
+  debug:
+    msg: "The message is {{ disk_dmm_dm.results | length }}"
+
+- name: 05.03 Create the tidb instance
+  tags:
+    - dm
+  gcp_compute_instance:
+    name:          "ins-dmm-dm-{{ item.0 }}"
+    machine_type:  n1-standard-1
+    disks:
+    - auto_delete: 'true'
+      boot:        'true'
+      source:      "{{ item.1 }}"
+    - auto_delete: 'true'
+      interface:   NVME
+      type:        SCRATCH
+      initialize_params:
+        disk_type: local-ssd
+    metadata:
+      startup-script-url: gs:://graphite-playground/bootstrap.sh
+      cost-center: '12345'
+    labels:
+      environment: dmm
+      component:   dm
+    network_interfaces:
+    - network:            "{{ network              }}"
+    zone:                 "{{ item.1.item[1]       }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+  with_indexed_items: "{{ disk_dmm_dm.results }}"
+
+###################################

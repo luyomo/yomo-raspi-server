@@ -1,0 +1,26 @@
+- name: Get the data from upstream tasks
+  set_fact:
+    componentIPs: "{{ hostvars['localhost'].get('componentIPs')['resources'] }}"
+
+- name: Get the data from upstream tasks
+  set_fact:
+    gatewayIP: "{{ hostvars['localhost'].get('componentIPs')['resources']['externalIP'] }}"
+
+- name: directory preparation
+  become: yes
+  file:
+    path: /var/docker-compose/wordpress
+    owner: mysql
+    group: mysql
+    state: directory
+
+- name: docker compose deployment
+  become: yes
+  template:
+    src: "{{ item.src  }}"
+    dest: "/var/docker-compose/wordpress/{{ item.dest }}"
+    owner: mysql
+    group: mysql
+    mode: u=rw,g=r,o=r
+  loop:
+    - { src: docker-compose.yml, dest: docker-compose.yml }

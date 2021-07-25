@@ -1,0 +1,13 @@
+# demo_setup.yml
+
+- hosts: servers
+  gather_facts: False
+  vars:
+    service_account_file: /etc/gcp/dbaas-test-268007.json
+    project: dbaas-test-268007
+    auth_kind: serviceaccount
+    scopes:
+      - https://www.googleapis.com/auth/compute
+
+  roles:
+      - ./roles/servers

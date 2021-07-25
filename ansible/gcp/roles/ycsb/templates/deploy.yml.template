@@ -1,0 +1,18 @@
+global:
+  user: "{{TIDB_USER}}"
+  ssh_port: 22
+  deploy_dir: "/DATA/tidb-deploy"
+  data_dir: "/DATA/tidb-data"
+server_configs: {}
+tidb_servers:
+{% for ip in componentIPs['tidb'] %}
+  - host: {{ ip }}
+{% endfor %}
+pd_servers:
+{% for ip in componentIPs['pd'] %}
+  - host: {{ ip }}
+{% endfor %}
+tikv_servers:
+{% for ip in componentIPs['kv'] %}
+  - host: {{ ip }}
+{% endfor %}

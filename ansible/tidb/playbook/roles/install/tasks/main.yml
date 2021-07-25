@@ -14,7 +14,6 @@
     uid: "{{USER.tidb}}"
 
 - name: 02.01 tiup bin download
-  become: yes
   get_url:
     url: https://tiup-mirrors.pingcap.com/install.sh
     dest: /tmp/install.sh
@@ -91,9 +90,13 @@
     name:
       - mariadb-client
       - sysbench
+      - build-essential
+      - git
+      - gcc
 
 - name: Install the required packages
   become: yes
+  when: ansible_os_family in  [ "CentOS" , "RedHat" ]
   ansible.builtin.package:
     name:
       - mariadb
@@ -125,11 +128,12 @@
     dest: /tmp/go-ycsb
 
 - name: 12.03 Compile the source code
-  shell: "{{item}}"
-  args:
+  shell:
+    cmd: "{{item}}"
     chdir: /tmp/go-ycsb
+    #executable: /bin/bash
   with_items:
-    - make
+    - PATH=/usr/local/go/bin:$PATH make
     - sudo cp bin/go-ycsb /usr/local/bin/
     - sudo cp -r workloads /etc/ycsb/
 

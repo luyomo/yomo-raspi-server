@@ -1,0 +1,9 @@
+#!/bin/bash
+
+HOSTS="{{ componentIPs['all'] | join(' ') }}"
+
+for host in $HOSTS
+do
+  ssh $host "sudo mkdir /DATA"
+  ssh $host "sudo chown -R {{TIDB_USER}}:{{TIDB_USER}} /DATA"
+done

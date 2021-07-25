@@ -1,0 +1,23 @@
+# demo_setup.yml
+
+- hosts: servers
+  gather_facts: True
+  vars:
+    service_account_file: /etc/gcp/dbaas-test-268007.json
+    project: dbaas-test-268007
+    auth_kind: serviceaccount
+    scopes:
+      - https://www.googleapis.com/auth/compute
+
+  roles:
+    - ./roles/getGcpInfo
+
+- hosts: mysql
+  gather_facts: True
+
+  roles:
+      #- ../base/playbook/roles/general
+      #- ../base/playbook/roles/docker
+      #- ../mysql/playbook/roles/single
+      #- ./roles/wordpress
+    - ../roles/dm

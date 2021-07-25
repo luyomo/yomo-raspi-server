@@ -1,0 +1,48 @@
+#- name: Get all the zones
+#  gcp_zones_info:
+#    region:               'asia-northeast1'
+#    project:              "{{ project              }}"
+#    auth_kind:            "{{ auth_kind            }}"
+#    service_account_file: "{{ service_account_file }}"
+#    scopes:               "{{ scopes               }}"
+#  register: result
+#
+#- debug:
+#    var=result
+
+    #- name: Get all the IPs of each component
+    #  gcp_zones_compute_instance_info:
+    #    region:               'asia-northeast1'
+    #    project:              "{{ project              }}"
+    #    auth_kind:            "{{ auth_kind            }}"
+    #    service_account_file: "{{ service_account_file }}"
+    #    scopes:               "{{ scopes               }}"
+    #  register: result
+
+    #- debug:
+    #    var=result
+
+- name: Get all the IPs of each component
+  gcp_zones_compute_instance_ip_summary:
+    region:               'asia-northeast1'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    scopes:               "{{ scopes               }}"
+  register: componentIPs
+
+- debug: var=componentIPs
+
+- name: Add a host alias that we reach through a tunnel (Ansible 1.9 and older)
+  add_host:
+    name: tidb_workstation
+    ansible_ssh_host: "{{ componentIPs['resources']['externalIP'] }}"
+    ansible_ssh_user: 'jay_zhang_pingcap_com'
+    ansible_ssh_port: '22'
+
+- name: Add a host alias that we reach through a tunnel (Ansible 1.9 and older)
+  add_host:
+    name: mysql
+    ansible_ssh_host: "{{ componentIPs['resources']['externalIP'] }}"
+    ansible_ssh_user: 'jay_zhang_pingcap_com'
+    ansible_ssh_port: '22'

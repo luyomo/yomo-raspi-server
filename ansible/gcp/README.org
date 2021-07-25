@@ -1,0 +1,389 @@
+* Install
+  - Generate all the aws resource
+  - Install the tiup resource to the workstation
+  - Install the tiup config file
+
+* todo
+Replace the ssh key in the aws servers role
+
+export AWS_ACCESS_KEY_ID='-- REMOVED --'
+export AWS_SECRET_ACCESS_KEY='-- REMOVED --'
+
+ansible-galaxy collection install amazon.aws
+ansible-galaxy collection install ansible.netcommon
+ansible-galaxy collection install community.aws
+pip install boto boto3 botocore netaddr
+
+* Create the vpc
+$aws ec2 create-vpc --cidr-block 172.16.0.0/16 --tag-specifications ResourceType=vpc,Tags=[\{Key=Name,Value=jaytest\}]
+{                                                                                                                                                                                                           
+    "Vpc": {
+        "CidrBlock": "172.16.0.0/16",                                                                                                                                                                       
+        "DhcpOptionsId": "dopt-d74aa6b0",                                                                                                                                                                   
+        "State": "pending",
+        "VpcId": "vpc-04e47d94917edb053",
+        "OwnerId": "385595570414",
+        "InstanceTenancy": "default",                                                                 
+        "Ipv6CidrBlockAssociationSet": [],
+        "CidrBlockAssociationSet": [
+            {
+                "AssociationId": "vpc-cidr-assoc-04dc7707158e36c84",
+                "CidrBlock": "172.16.0.0/16",
+                "CidrBlockState": {
+                    "State": "associated"
+                }
+            }
+        ],        
+        "IsDefault": false,                                                                           
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "jaytest"
+            }
+        ]
+    }
+}
+
+$aws ec2 create-internet-gateway --tag-specifications ResourceType=internet-gateway,Tags=[\{Key=Name,Value=jaytest\}]
+{
+    "InternetGateway": {
+        "Attachments": [],
+        "InternetGatewayId": "igw-05443bbbf298d8bc8",
+        "OwnerId": "385595570414",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "jaytest"
+            }
+        ]
+    }
+}
+
+$aws ec2 attach-internet-gateway --internet-gateway-id igw-05443bbbf298d8bc8 --vpc-id=vpc-04e47d94917edb053
+
+$aws ec2 create-route-table --vpc-id vpc-04e47d94917edb053
+{
+    "RouteTable": {
+        "Associations": [],
+        "PropagatingVgws": [],
+        "RouteTableId": "rtb-05c7d19ef15cbe9ad",
+        "Routes": [
+            {
+                "DestinationCidrBlock": "172.16.0.0/16",
+                "GatewayId": "local",
+                "Origin": "CreateRouteTable",
+                "State": "active"
+            }
+        ],
+        "Tags": [],
+        "VpcId": "vpc-04e47d94917edb053",
+        "OwnerId": "385595570414"
+    }
+}
+
+$aws ec2 create-route-table --vpc-id vpc-04e47d94917edb053 
+{
+    "RouteTable": {
+        "Associations": [],
+        "PropagatingVgws": [],
+        "RouteTableId": "rtb-08e277ae4ce0a973f",
+        "Routes": [
+            {
+                "DestinationCidrBlock": "172.16.0.0/16",
+                "GatewayId": "local",
+                "Origin": "CreateRouteTable",
+                "State": "active"
+            }
+        ],
+        "Tags": [],
+        "VpcId": "vpc-04e47d94917edb053",
+        "OwnerId": "385595570414"
+    }
+}
+
+$aws ec2 create-route --route-table-id rtb-05c7d19ef15cbe9ad --destination-cidr-block 0.0.0.0/0 --gateway-id igw-05443bbbf298d8bc8
+{
+    "Return": true
+}
+
+$aws ec2 create-vpc-endpoint --vpc-id vpc-04e47d94917edb053 --service-name com.amazonaws.ap-northeast-1.s3 --route-table-ids rtb-05c7d19ef15cbe9ad --tag-specifications ResourceType=vpc-endpoint,Tags=[\{Key=Name,Value=jaytest\}]
+{
+    "VpcEndpoint": {
+        "VpcEndpointId": "vpce-0efbe82e6a1338611",
+        "VpcEndpointType": "Gateway",
+        "VpcId": "vpc-04e47d94917edb053",
+        "ServiceName": "com.amazonaws.ap-northeast-1.s3",
+        "State": "available",
+        "PolicyDocument": "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}",
+        "RouteTableIds": [
+            "rtb-05c7d19ef15cbe9ad"
+        ],
+        "SubnetIds": [],
+        "Groups": [],
+        "PrivateDnsEnabled": false,
+        "RequesterManaged": false,
+        "NetworkInterfaceIds": [],
+        "DnsEntries": [],
+        "CreationTimestamp": "2021-07-05T23:39:46+00:00",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "jaytest"
+            }
+        ],
+        "OwnerId": "385595570414"
+    }
+}
+
+$aws ec2 create-vpc-endpoint --vpc-id vpc-04e47d94917edb053 --service-name com.amazonaws.ap-northeast-1.s3 --route-table-ids rtb-08e277ae4ce0a973f --tag-specifications ResourceType=vpc-endpoint,Tags=[\{Key=Name,Value=jaytest\}]
+{
+    "VpcEndpoint": {
+        "VpcEndpointId": "vpce-0411fd0223481afc4",
+        "VpcEndpointType": "Gateway",
+        "VpcId": "vpc-04e47d94917edb053",
+        "ServiceName": "com.amazonaws.ap-northeast-1.s3",
+        "State": "available",
+        "PolicyDocument": "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}",
+        "RouteTableIds": [
+            "rtb-08e277ae4ce0a973f"
+        ],
+        "SubnetIds": [],
+        "Groups": [],
+        "PrivateDnsEnabled": false,
+        "RequesterManaged": false,
+        "NetworkInterfaceIds": [],
+        "DnsEntries": [],
+        "CreationTimestamp": "2021-07-05T23:41:36+00:00",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "jaytest"
+            }
+        ],
+        "OwnerId": "385595570414"
+    }
+}
+
+$aws ec2 create-security-group --group-name "jaytest" --description "TiDB security group" --vpc-id vpc-04e47d94917edb053
+{
+    "GroupId": "sg-0c36f6fed86132edb"
+}
+
+$aws ec2 describe-availability-zones  --query 'AvailabilityZones[].{ZoneName:ZoneName}' --output text
+ap-northeast-1a
+ap-northeast-1c
+ap-northeast-1d
+
+$echo "172.16.0.0" | sed -r "s/[0-9]{1,3}/10/3"
+172.16.10.0
+
+--------------------------------------------------------------------------
+    $aws ec2 create-subnet --cidr-block 172.16.10.0/24 --availability-zone ap-northeast-1a --vpc-id vpc-04e47d94917edb053
+    {
+        "Subnet": {
+            "AvailabilityZone": "ap-northeast-1a",
+            "AvailabilityZoneId": "apne1-az4",
+            "AvailableIpAddressCount": 251,
+            "CidrBlock": "172.16.10.0/24",
+            "DefaultForAz": false,
+            "MapPublicIpOnLaunch": false,
+            "State": "available",
+            "SubnetId": "subnet-0f7d530506e08cc3e",
+            "VpcId": "vpc-04e47d94917edb053",
+            "OwnerId": "385595570414",
+            "AssignIpv6AddressOnCreation": false,
+            "Ipv6CidrBlockAssociationSet": [],
+            "SubnetArn": "arn:aws:ec2:ap-northeast-1:385595570414:subnet/subnet-0f7d530506e08cc3e"
+        }
+    }
+    
+    $aws ec2 associate-route-table --route-table-id rtb-08e277ae4ce0a973f --subnet-id subnet-0f7d530506e08cc3e
+    {
+        "AssociationId": "rtbassoc-05a80a262f1d973cb",
+        "AssociationState": {
+            "State": "associated"
+        }
+    }
+    
+    $aws ec2 authorize-security-group-ingress --group-id sg-0c36f6fed86132edb --ip-permissions IpProtocol=-1,FromPort=-1,ToPort=-1,IpRanges="[{CidrIp=172.16.10.0/24,Description='All permit'}]"
+
+    ----
+    $aws ec2 create-subnet --cidr-block 172.16.20.0/24 --availability-zone ap-northeast-1c --vpc-id vpc-04e47d94917edb053
+    {
+        "Subnet": {
+            "AvailabilityZone": "ap-northeast-1c",
+            "AvailabilityZoneId": "apne1-az1",
+            "AvailableIpAddressCount": 251,
+            "CidrBlock": "172.16.20.0/24",
+            "DefaultForAz": false,
+            "MapPublicIpOnLaunch": false,
+            "State": "available",
+            "SubnetId": "subnet-0250cefa8a7a492e4",
+            "VpcId": "vpc-04e47d94917edb053",
+            "OwnerId": "385595570414",
+            "AssignIpv6AddressOnCreation": false,
+            "Ipv6CidrBlockAssociationSet": [],
+            "SubnetArn": "arn:aws:ec2:ap-northeast-1:385595570414:subnet/subnet-0250cefa8a7a492e4"
+        }
+    }
+    
+    aws ec2 associate-route-table --route-table-id rtb-08e277ae4ce0a973f --subnet-id subnet-0250cefa8a7a492e4
+    {
+        "AssociationId": "rtbassoc-04735ca009a5480ad",
+        "AssociationState": {
+            "State": "associated"
+        }
+    }
+    
+    aws ec2 authorize-security-group-ingress --group-id sg-0c36f6fed86132edb --ip-permissions IpProtocol=-1,FromPort=-1,ToPort=-1,IpRanges="[{CidrIp=172.16.20.0/24,Description='All permit'}]"
+    ----
+    aws ec2 create-subnet --cidr-block 172.16.30.0/24 --availability-zone ap-northeast-1c --vpc-id vpc-04e47d94917edb053
+{
+    "Subnet": {
+        "AvailabilityZone": "ap-northeast-1c",
+        "AvailabilityZoneId": "apne1-az1",
+        "AvailableIpAddressCount": 251,
+        "CidrBlock": "172.16.30.0/24",
+        "DefaultForAz": false,
+        "MapPublicIpOnLaunch": false,
+        "State": "available",
+        "SubnetId": "subnet-0256f9a054b0c922f",
+        "VpcId": "vpc-04e47d94917edb053",
+        "OwnerId": "385595570414",
+        "AssignIpv6AddressOnCreation": false,
+        "Ipv6CidrBlockAssociationSet": [],
+        "SubnetArn": "arn:aws:ec2:ap-northeast-1:385595570414:subnet/subnet-0256f9a054b0c922f"
+    }
+}
+    
+    aws ec2 associate-route-table --route-table-id rtb-08e277ae4ce0a973f --subnet-id subnet-0256f9a054b0c922f
+    {
+        "AssociationId": "rtbassoc-0bdb14e789baa5d9d",
+        "AssociationState": {
+            "State": "associated"
+        }
+    }
+    
+    aws ec2 authorize-security-group-ingress --group-id sg-0c36f6fed86132edb --ip-permissions IpProtocol=-1,FromPort=-1,ToPort=-1,IpRanges="[{CidrIp=172.16.30.0/24,Description='All permit'}]"
+--------------------------------------------------------------------------
+$aws ec2 replace-route-table-association --association-id rtbassoc-0bdb14e789baa5d9d --route-table-id rtb-05c7d19ef15cbe9ad
+{
+    "NewAssociationId": "rtbassoc-0450ae13fb36849bb",
+    "AssociationState": {
+        "State": "associated"
+    }
+}
+
+
+$aws ec2 describe-key-pairs --key-name jaytest_KeyPair
+
+An error occurred (InvalidKeyPair.NotFound) when calling the DescribeKeyPairs operation: The key pair 'jaytest_KeyPair' does not exist
+
+$aws ec2 create-key-pair --key-name jaytest_KeyPair --query 'KeyMaterial' --output text > jaytest_KeyPair.pem
+
+
+$aws ec2 describe-images --owners aws-marketplace --filters Name=product-code,Values=aw0evgkw8e5c1q413zgy5pjce --query 'reverse(sort_by(Images, &CreationDate))[0].[ImageId]' --output text
+
+$aws ec2 run-instances --tag-specifications "ResourceType=instance,Tags={Key=Name,Value=jaytest_Deploy}" --image-id ami-06a46da680048c8ae --instance-type t3.micro --key-name jaytest_KeyPair --security-group-ids sg-0c36f6fed86132edb --subnet-id subnet-0256f9a054b0c922f --associate-public-ip-address --block-device-mappings "[{\"DeviceName\": \"/dev/sda1\",     \"Ebs\":{\"DeleteOnTe
+rmination\":true}}] "                                                                                  
+{                                            
+    "Groups": [],                    
+    "Instances": [                    
+        {                                                                                             
+            "AmiLaunchIndex": 0,  
+            "ImageId": "ami-06a46da680048c8ae",
+            "InstanceId": "i-01e411c3c946ef4d0",
+            "InstanceType": "t3.micro",
+            "KeyName": "jaytest_KeyPair",        
+            "LaunchTime": "2021-07-06T01:07:53+00:00",                                                
+            "Monitoring": {                                                                           
+                "State": "disabled"                                                                   
+            },                                                                                        
+            "Placement": {               
+                "AvailabilityZone": "ap-northeast-1c",
+                "GroupName": "",             
+                "Tenancy": "default"
+            },                        
+            "PrivateDnsName": "ip-172-16-30-98.ap-northeast-1.compute.internal",
+            "PrivateIpAddress": "172.16.30.98",
+            "ProductCodes": [],                                                                       
+            "PublicDnsName": "",                      
+
+$aws ec2 describe-instances --instance-ids i-01e411c3c946ef4d0 --query 'Reservations[].Instances[].{PublicIp:PublicIpAddress}'
+
+$dig -4 @ns1.google.com o-o.myaddr.l.google.com TXT +short | sed 's/"//g'
+
+$aws ec2 authorize-security-group-ingress --group-id sg-0c36f6fed86132edb --ip-permissions IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges="[{CidrIp=118.241.130.235/32,Description='SSH permit(from making server)'}]"
+
+
+
+rsync -e 'ssh -i jaytest_KeyPair.pem' jaytest_KeyPair.pem centos@13.115.192.216:~/.
+
+** Aurora preparation
+*** db subnet group preparation
+aws rds describe-db-subnet-groups
+
+aws rds create-db-subnet-group \
+    --db-subnet-group-name jaysubnetgroup \
+    --db-subnet-group-description "jay test DB subnet group" \
+    --subnet-ids '["subnet-0f7d530506e08cc3e","subnet-0250cefa8a7a492e4","subnet-0256f9a054b0c922f"]'
+
+*** cluster parameter group preparation
+aws rds create-db-cluster-parameter-group --db-cluster-parameter-group-name jaydbclusterparametergroup --db-parameter-group-family aurora-mysql5.7 --description "Jay's cluster parameter group"
+aws rds modify-db-cluster-parameter-group --db-cluster-parameter-group-name jaydbclusterparametergroup --parameters "ParameterName=binlog_format,ParameterValue=row,ApplyMethod=pending-reboot"
+
+*** db parameter group preparation
+aws rds create-db-parameter-group --db-parameter-group-name jaydbparametergroup --db-parameter-group-family aurora-mysql5.7 --description "Jay's db parameter group"
+aws rds modify-db-parameter-group --db-parameter-group-name jaydbparametergroup --parameters "ParameterName=max_connections,ParameterValue=250,ApplyMethod=immediate"
+
+*** 
+aws rds create-db-cluster --region ap-southeast-1 --db-cluster-identifier aurora-jay --engine aurora-mysql \
+     --engine-version 5.7.12 --master-username jay --master-user-password passwd1234 \
+     --db-subnet-group-name jaysubnetgroup --vpc-security-group-ids sg-0c36f6fed86132edb
+
+aws rds create-db-instance --db-instance-identifier ins-aurora-jay --db-cluster-identifier aurora-jay --engine aurora-mysql --db-instance-class db.r4.large
+
+aws rds modify-db-instance --db-parameter-group-name jaydbparametergroup --db-instance-identifier ins-aurora-jay
+aws rds modify-db-cluster --db-cluster-identifier aurora-jay --db-cluster-parameter-group-name jaydbclusterparametergroup
+
+
+
+* 
+MySQL [(none)]> create database dmtest;
+Query OK, 1 row affected (0.01 sec)
+
+MySQL [(none)]> create user `dmuser`@`%` identified by 'dmuser';
+Query OK, 0 rows affected (0.01 sec)
+
+MySQL [dmtest]> GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO `dmuser`@`%` ;
+Query OK, 0 rows affected (0.00 sec)
+
+
+** Deploy the dm
+curl https://download.pingcap.org/dm-v2.0.4-linux-amd64.tar.gz | tar xzf -
+
+/home/centos/dm-v2.0.4-linux-amd64/bin
+
+MySQL [dmtest]> show binary logs; 
++----------------------------+-----------+
+| Log_name                   | File_size |
++----------------------------+-----------+
+| mysql-bin-changelog.000001 |       154 |
+| mysql-bin-changelog.000002 |       398 |
+| mysql-bin-changelog.000003 |      1662 |
++----------------------------+-----------+
+3 rows in set (0.00 sec)
+
+MySQL [dmtest]> SHOW MASTER STATUS;
++----------------------------+----------+--------------+------------------+-------------------+
+| File                       | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
++----------------------------+----------+--------------+------------------+-------------------+
+| mysql-bin-changelog.000003 |     1662 |              |                  |                   |
++----------------------------+----------+--------------+------------------+-------------------+
+
+Take the S3 snapshot
+
+
+mysql -u root -h tidb.7976c5f1.8a20149b.ap-southeast-1.shared.aws.tidbcloud.com -P 4000 -p
+
+* DM deployment
