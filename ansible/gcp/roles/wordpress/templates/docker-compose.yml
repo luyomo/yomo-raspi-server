@@ -1,7 +1,7 @@
 version: '2.0'
 
 services:
-  wordpress:
+  wordpress_mariadb:
     image: wordpress:latest
     ports:
       - "{{ WORDPRESS_PORT }}:80"

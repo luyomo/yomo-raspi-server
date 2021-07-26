@@ -18,6 +18,14 @@
       group: root
       owner: root
 
+- name: Make the file folder for DM instance
+  become: true
+  file:
+      path: "/DATA/dm"
+      state: directory
+      group: "{{ TIDB_USER }}"
+      owner: "{{ TIDB_USER }}"
+
 - name: Deploy the dm resources
   become: true
   template:
@@ -29,6 +37,16 @@
       - dm-worker.toml
       - source.yaml
       - task.yaml
+
+- name: Deploy the service resources
+  become: true
+  template:
+      src: "{{ item.src }}"
+      dest: "/etc/systemd/system/{{ item.dest }}"
+      mode: '0644'
+  with_items:
+      - { src: "dm-master.service" ,      dest: "dm-master.service" }
+      - { src: "dm-worker.service" ,      dest: "dm-worker.service" }
 
 - name: Print the hostname
   debug:

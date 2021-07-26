@@ -16,8 +16,4 @@
   gather_facts: True
 
   roles:
-    - ../base/playbook/roles/general
-    - ../base/playbook/roles/docker
-    - ../mysql/playbook/roles/single
-    - ./roles/wordpress
-    - ../roles/dm
+    - ./roles/start-dm

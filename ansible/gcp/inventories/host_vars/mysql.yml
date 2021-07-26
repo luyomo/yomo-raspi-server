@@ -1,17 +1,15 @@
+TIDB_USER: jay_zhang_pingcap_com
+
 MYSQL_DBNAME: wordpress
 MYSQL_DBUSER: wordpress
 MYSQL_DBPASSWD: wordpress
 
 WORDPRESS_PORT: 8000
-
+WORDPRESS_TIDB_PORT: 8001
 
 SOURCE_INFO:
-    HOST: ins-aurora-jay.c2v2pxjs8mtm.ap-southeast-1.rds.amazonaws.com
-    USER: dmuser
-    PASSWORD: dmuser
+    USER: wordpress
+    PASSWORD: wordpress
     PORT: 3306
 DEST_INFO:
-    HOST: tidb.7976c5f3.8a20149b.ap-southeast-1.shared.aws.tidbcloud.com
-    USER: root
-    PASSWORD: passwd1234
-    PORT: 4000
+    DBNAME: wordpress

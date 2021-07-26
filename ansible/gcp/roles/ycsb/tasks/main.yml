@@ -28,9 +28,32 @@
     - {src: "deploy.yml.template"       ,     dest: "deploy.yml"    , mode: "0644" }
     - {src: "write-kv.sh.template"      ,     dest: "write-kv.sh"   , mode: "0755" }
     - {src: "read-kv.sh.template"       ,     dest: "read-kv.sh"    , mode: "0755" }
+    - {src: "startTIDB.sh"              ,     dest: "startTIDB.sh"  , mode: "0755" }
+
+- name: Prepare the ssh key
+  file:
+    path: ~/.ssh
+    state: directory
+    mode: '0700'
 
 - name: 02. Deploy the private key
   ansible.builtin.copy:
     src:  ~/.ssh/id_rsa
     dest: ~/.ssh/id_rsa
     mode: "0400"
+
+- name: Check the cluster status
+  shell: /home/jay_zhang_pingcap_com/.tiup/bin/tiup cluster display dmmtest
+  register: clusterSts
+
+- name: debug
+  debug:
+    var=clusterSts
+
+- name: Init the server
+  when: clusterSts.rc == 1
+  shell: "{{ item }}"
+  with_items:
+    - /opt/ycsb/initServers.sh
+    - echo 'y' | /home/jay_zhang_pingcap_com/.tiup/bin/tiup cluster deploy dmmtest v5.1.0 /opt/ycsb/deploy.yml
+    - /home/jay_zhang_pingcap_com/.tiup/bin/tiup cluster start dmmtest

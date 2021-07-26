@@ -6,6 +6,13 @@
   set_fact:
     gatewayIP: "{{ hostvars['localhost'].get('componentIPs')['resources']['externalIP'] }}"
 
+- name: Pull wordpres images from remote
+  become: yes
+  become_user: mysql
+  docker_image:
+    name: wordpress
+    source: pull
+
 - name: directory preparation
   become: yes
   file:
@@ -23,4 +30,24 @@
     group: mysql
     mode: u=rw,g=r,o=r
   loop:
-    - { src: docker-compose.yml, dest: docker-compose.yml }
+    - { src: docker-compose.yml,      dest: docker-compose.yml      }
+    - { src: docker-compose.tidb.yml, dest: docker-compose.tidb.yml }
+
+- name: Start the mariadb
+  become: yes
+  become_user: mysql
+  shell: /usr/bin/docker-compose -f /var/docker-compose/mariadb/docker-compose.yml up -d
+
+- name: Grant permission to wordpress
+  shell: "{{item}}"
+  with_items:
+      - "mysql -h {{ componentIPs['workstation'] | first }} -u root -P 3306 -ppasswd wordpress -e 'GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT, REPLICATION MASTER ADMIN ON *.* TO `wordpress`@`%`'"
+      - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'create database if not exists wordpress'"
+      - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'create user if not exists wordpress@`%` identified by \"wordpress\"'"
+      - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'grant select, update, insert, delete on wordpress.* to `wordpress`@`%`'"
+      - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'set global tidb_enable_noop_functions=on'"
+
+- name: Start the mariadb
+  become: yes
+  become_user: mysql
+  shell: /usr/bin/docker-compose -f /var/docker-compose/wordpress/docker-compose.yml up -d

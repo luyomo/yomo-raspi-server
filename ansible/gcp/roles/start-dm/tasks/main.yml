@@ -1,0 +1,23 @@
+- name: Get the data from upstream tasks
+  set_fact:
+    componentIPs: "{{ hostvars['localhost'].get('componentIPs')['resources'] }}"
+
+- name: Start service dm-master/dm-worker, if not started
+  become: true
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+  with_items:
+    - dm-master
+    - dm-worker
+
+- name: Start the task
+  shell: "{{ item }}"
+  with_items:
+    - "/opt/dm-v2.0.4-linux-amd64/bin/dmctl --master-addr {{ componentIPs['workstation'] | first }}:8261 operate-source create /var/dm/source.yaml"
+    - "/opt/dm-v2.0.4-linux-amd64/bin/dmctl --master-addr {{ componentIPs['workstation'] | first }}:8261 start-task /var/dm/task.yaml"
+
+- name: Start the mariadb
+  become: yes
+  become_user: mysql
+  shell: /usr/bin/docker-compose -f /var/docker-compose/wordpress/docker-compose.tidb.yml up -d

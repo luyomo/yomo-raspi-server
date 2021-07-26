@@ -4,7 +4,7 @@ source-id: "mysql-replica-01"
 enable-gtid: false
 
 from:
-  host: "{{SOURCE_INFO.HOST}}"
-  user: "{{SOURCE_INFO.USER}}"
-  password: "{{SOURCE_INFO.PASSWORD}}"
-  port: {{SOURCE_INFO.PORT}}
+  host: "{{ componentIPs['workstation'] | first }}"
+  user: "{{ SOURCE_INFO.USER }}"
+  password: "{{ SOURCE_INFO.PASSWORD }}"
+  port: {{ SOURCE_INFO.PORT }}

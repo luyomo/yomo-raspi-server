@@ -1,0 +1,15 @@
+[Unit]
+Description=dm-master service
+After=syslog.target network.target remote-fs.target nss-lookup.target
+
+[Service]
+LimitNOFILE=1000000
+LimitSTACK=10485760
+User={{TIDB_USER}}
+ExecStart=/opt/dm-v2.0.4-linux-amd64/bin/dm-master --data-dir=/DATA/dm/ --config=/var/dm/dm-master.toml
+Restart=always
+
+RestartSec=15s
+
+[Install]
+WantedBy=multi-user.target
