@@ -105,7 +105,7 @@
   gcp_compute_disk:
     name:                 disk-dmm-ws
     source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
-    size_gb:              20
+    size_gb:              50
     zone:                 'asia-northeast1-a'
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
@@ -199,7 +199,7 @@
     - pd
   gcp_compute_instance:
     name:          "ins-dmm-pd-{{ item.0 }}"
-    machine_type:  n1-standard-1
+    machine_type:  n1-standard-4
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -224,13 +224,14 @@
     state: present
   with_indexed_items: "{{ disk_dmm_pd.results }}"
 
+  ##################### Createt the KV instance
 - name: 06.01 Create the disk for kvs
   tags:
     - kv
   gcp_compute_disk:
     name:                 "disk-dmm-kv-{{ item.0 }}"
     source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
-    size_gb:              20
+    size_gb:              100
     zone:                 "{{ item.1 }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
@@ -252,7 +253,7 @@
     - kv
   gcp_compute_instance:
     name:          "ins-dmm-kv-{{ item.0 }}"
-    machine_type:  n1-standard-1
+    machine_type:  n1-standard-8
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -276,6 +277,60 @@
     service_account_file: "{{ service_account_file }}"
     state: present
   with_indexed_items: "{{ disk_dmm_kv.results }}"
+
+  ##################### Createt the addition KV instance 
+- name: 06.01 Create the disk for kvs
+  tags:
+    - add-kv
+  gcp_compute_disk:
+    name:                 "disk-dmm-kv-v2-{{ item.0 }}"
+    source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
+    size_gb:              100
+    zone:                 "{{ item.1 }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+    labels:
+      component:          "kv"
+  with_indexed_items: "{{ [ zones | first ]  + [ zones | last ] }}"
+  register: disk_dmm_kv_v02
+
+- name: 06.02 Print the disk for kvs
+  tags:
+    - add-kv
+  debug:
+    msg: "The message is {{ disk_dmm_kv_v02.results | length }}"
+
+- name: 05.03 Create the kv instance
+  tags:
+    - add-kv
+  gcp_compute_instance:
+    name:          "ins-dmm-kv-v2-{{ item.0 }}"
+    machine_type:  n1-standard-1
+    disks:
+    - auto_delete: 'true'
+      boot:        'true'
+      source:      "{{ item.1 }}"
+    - auto_delete: 'true'
+      interface:   NVME
+      type:        SCRATCH
+      initialize_params:
+        disk_type: local-ssd
+    metadata:
+      startup-script-url: gs:://graphite-playground/bootstrap.sh
+      cost-center: '12345'
+    labels:
+      environment: dmm
+      component:   kv
+    network_interfaces:
+    - network:            "{{ network              }}"
+    zone:                 "{{ item.1.item[1]       }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state: present
+  with_indexed_items: "{{ disk_dmm_kv_v02.results }}"
 
 - name: 07.01 Create the disk for tidbs
   tags:
@@ -350,33 +405,164 @@
   debug:
     var=tidbInstances['resources']
 
-- name: Print all the instances
-  when: false
+- name: create a health check
   tags:
     - tidb
-  debug:
-    msg: " This is the message {{ item.1['zone'].split('/')[-1] }}"
-  with_indexed_items: "{{ tidbInstances['resources'] }}"
-
-- name: 04.01 Create the group
-  tags:
-    - tidb
-  gcp_compute_instance_group:
-    name:                 "dmmtidb{item.0}}"
-    named_ports:
-    - name: tidb
+  gcp_compute_health_check:
+    name: checktidbstatus
+    type: TCP
+    tcp_health_check:
       port: 4000
-    instances:            "{{ [ item.1 ]                    }}"
-    network:              "{{ network                       }}"
-    zone:                 "{{ item.1['zone'].split('/')[-1] }}"
+      request: ping
+      response: pong
+    healthy_threshold: 10
+    timeout_sec: 2
+    unhealthy_threshold: 5
     project:              "{{ project                       }}"
     auth_kind:            "{{ auth_kind                     }}"
     service_account_file: "{{ service_account_file          }}"
+    state: present
+  register: healthcheck
+
+- name: FFFFFFFFFFFFFFFFF
+  tags:
+    - tidb
+  debug:
+    var=healthcheck
+
+- name: create a target pool
+  tags:
+    - tidb
+  gcp_compute_target_pool:
+    name: tidbtargetpool
+    instances:            "{{ tidbInstances['resources'] }}"
+    #health_check:         "{{ healthcheck                }}"
+    region:               'asia-northeast1'
+    project:              "{{ project                    }}"
+    auth_kind:            "{{ auth_kind                  }}"
+    service_account_file: "{{ service_account_file       }}"
+    state: present
+  register: targetpool
+
+- name: 01.01  Allocate the gateway
+  tags:
+    - tidb
+  gcp_compute_address:
     state:                present
-  with_indexed_items: "{{ tidbInstances['resources'] }}"
+    name:                 'tidb-gateway'
+    region:               'asia-northeast1'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    scopes:               "{{ scopes               }}"
+  register: tidbGateway
+
+- name: create a forwarding rule
+  tags:
+    - tidb
+  gcp_compute_forwarding_rule:
+    name: dmmgateway
+    region:               'asia-northeast1'
+    target: "{{ targetpool }}"
+    ip_protocol: TCP
+    port_range: 4000-4000
+    ip_address: "{{  tidbGateway.address }}"
+    project:              "{{ project                    }}"
+    auth_kind:            "{{ auth_kind                  }}"
+    service_account_file: "{{ service_account_file       }}"
+    state: present
+
+#- name: Print all the instances
+#  when: false
+#  tags:
+#    - tidb
+#  debug:
+#    msg: " This is the message {{ item.1['zone'].split('/')[-1] }}"
+#  with_indexed_items: "{{ tidbInstances['resources'] }}"
+#
+#- name: 04.01 Create the group
+#  tags:
+#    - tidb
+#  gcp_compute_instance_group:
+#    name:                 "dmmtidbgroup{{item.0}}"
+#    named_ports:
+#    - name: tidb
+#      port: 4000
+#    instances:            "{{ [ item.1 ]                    }}"
+#    network:              "{{ network                       }}"
+#    zone:                 "{{ item.1['zone'].split('/')[-1] }}"
+#    project:              "{{ project                       }}"
+#    auth_kind:            "{{ auth_kind                     }}"
+#    service_account_file: "{{ service_account_file          }}"
+#    state:                present
+#  with_indexed_items: "{{ tidbInstances['resources'] }}"
+#  register: groupinstance
+#
+#- name: Set tall the group instance
+#  tags:
+#    - tidb
+#  set_fact:
+#    listGroupInstance: "{{ groupinstance.results | map(attribute='selfLink') | list }}" 
+#
+#- name: Print the listGroupInstance
+#  when: true
+#  tags:
+#    - tidb
+#  debug:
+#    var=listGroupInstance
+#
+#- name: print the group instance
+#  when: false
+#  tags:
+#    - tidb
+#  debug:
+#    var=item['selfLink']
+#  with_items: "{{ groupinstance.results }}"
+#
+#- name: create a health check
+#  tags:
+#    - tidb
+#  gcp_compute_health_check:
+#    name: checktidbstatus
+#    type: TCP
+#    tcp_health_check:
+#      port: 4000
+#      request: ping
+#      response: pong
+#    healthy_threshold: 10
+#    timeout_sec: 2
+#    unhealthy_threshold: 5
+#    project:              "{{ project                       }}"
+#    auth_kind:            "{{ auth_kind                     }}"
+#    service_account_file: "{{ service_account_file          }}"
+#    state: present
+#  register: healthcheck
+#
+#- name: create a tidb backend service
+#  when: true
+#  tags:
+#    - tidb
+#  gcp_compute_backend_service:
+#    name: backendservice01
+#    backends:
+##    - group: "{{ instancegroup.selfLink }}"
+##    - group: "{{ listGroupInstance }}"
+#    - group: "https://www.googleapis.com/compute/v1/projects/dbaas-test-268007/zones/asia-northeast1-b/instanceGroups/dmmtidbgroup0"
+#    - group: "https://www.googleapis.com/compute/v1/projects/dbaas-test-268007/zones/asia-northeast1-c/instanceGroups/dmmtidbgroup1"
+#    - group: "https://www.googleapis.com/compute/v1/projects/dbaas-test-268007/zones/asia-northeast1-a/instanceGroups/dmmtidbgroup2"
+#    load_balancing_scheme: 'INTERNAL_SELF_MANAGED'
+#    health_checks:
+#    - "{{ healthcheck.selfLink }}"
+#    protocol: 'TCP'
+#    #enable_cdn: 'true'
+#    project:              "{{ project                       }}"
+#    auth_kind:            "{{ auth_kind                     }}"
+#    service_account_file: "{{ service_account_file          }}"
+#    state: present
+
 
 ##################################
-- name: 07.01 Create the disk for tidbs
+- name: 07.01 Create the disk for dm
   tags:
     - dm
   gcp_compute_disk:
@@ -404,7 +590,7 @@
     - dm
   gcp_compute_instance:
     name:          "ins-dmm-dm-{{ item.0 }}"
-    machine_type:  n1-standard-1
+    machine_type:  n1-standard-4
     disks:
     - auto_delete: 'true'
       boot:        'true'

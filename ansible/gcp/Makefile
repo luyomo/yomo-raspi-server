@@ -35,3 +35,6 @@ wordpress:
 
 start-dm:
 	ansible-playbook -i inventories/hosts.yml start-dm.yml
+
+add-kv:
+	ansible-playbook -i inventories/hosts.yml servers.yml --tags "add-kv,basic"
