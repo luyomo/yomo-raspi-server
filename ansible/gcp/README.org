@@ -387,3 +387,10 @@ Take the S3 snapshot
 mysql -u root -h tidb.7976c5f1.8a20149b.ap-southeast-1.shared.aws.tidbcloud.com -P 4000 -p
 
 * DM deployment
+
+* Prepare the data
+tiup bench tpcc --warehouses 100 --parts 4 prepare -H 10.146.15.210
+
+
+
+https://console.cloud.google.com/net-services/loadbalancing/details/internal/asia-northeast1/lb-dmm-tidb?project=dbaas-test-268007&organizationId=478164292948

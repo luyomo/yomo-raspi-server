@@ -59,7 +59,7 @@ def main():
 
     for zone in zones:
         module.params['zone'] = zone
-        return_list.append(fetch_list(module, collection(module), query_options(module.params['filters']) ))
+        return_list = return_list + fetch_list(module, collection(module), query_options(module.params['filters']) )
 
     return_value = {'resources': return_list}
 

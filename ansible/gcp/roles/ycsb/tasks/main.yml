@@ -43,15 +43,19 @@
     mode: "0400"
 
 - name: Check the cluster status
+  when: false
   shell: /home/jay_zhang_pingcap_com/.tiup/bin/tiup cluster display dmmtest
+  ignore_errors: yes
   register: clusterSts
 
 - name: debug
+  when: false
   debug:
     var=clusterSts
 
 - name: Init the server
-  when: clusterSts.rc == 1
+  when: false
+  #when: clusterSts.rc == 1
   shell: "{{ item }}"
   with_items:
     - /opt/ycsb/initServers.sh
