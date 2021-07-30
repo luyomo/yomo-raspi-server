@@ -1,0 +1,9 @@
+数据库性能测试Benchmark: TPC-H工具使用
+
+https://qiita.com/ShuA/items/dc933ca11cbd541ebfd7
+
+bq --project_id=dbaas-test-268007 mk --schema=N_NATIONKEY:INTEGER,N_NAME:STRING,N_REGIONKEY:INTEGER,N_COMMENT:STRING mixi.NATION
+
+bq --project_id=dbaas-test-268007 load --field_delimiter='|' mixi.NATION /tmp/csv/nation.tbl
+
+bq --project_id=dbaas-test-268007 query "select * from mixi.NATION"

@@ -1,42 +1,14 @@
-- name: 01.01  Allocate the gateway
+##### Gather the available zones from the regions
+- name: 01.01 Get all the zones
   tags:
     - basic
-    - gateway
-  gcp_compute_address:
-    state:                present
-    name:                 'gw-dmm'
+    - zones
+  gcp_zones_info:
     region:               'asia-northeast1'
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
     scopes:               "{{ scopes               }}"
-
-- name: 01.02 Gather the dateway info
-  tags:
-    - basic
-    - gateway
-  gcp_compute_address_info:
-    region: 'asia-northeast1'
-    filters:
-    - name = gw-dmm
-    scopes:               "{{ scopes               }}"
-    project:              "{{ project              }}"
-    auth_kind:            "{{ auth_kind            }}"
-    service_account_file: "{{ service_account_file }}"
-  register: ipaddr
-
-- name: 01.03 Print the gateway info
-  tags:
-    - basic
-    - gateway
-  debug:
-    var=ipaddr
-
-- name: 02.01 Get all the zones
-  tags:
-    - basic
-    - zones
-  shell: /opt/google-cloud-sdk/bin/gcloud compute zones list --filter="name~'asia-northeast1'" --format 'csv[no-heading](name)'
   register: zones
 
 - name: 02.02 Set the zones as facts
@@ -44,15 +16,9 @@
     - basic
     - zones
   set_fact:
-    zones: "{{zones.stdout.split('\n')}}"
+    zones: "{{ zones.resources }}"
 
-- name: 02.03 Print all the zones
-  tags:
-    - basic
-    - zones
-  debug:
-    var=zones
-
+##### Setup the network and firewall
 - name: 03.01 create the subnets
   tags:
     - subnets
@@ -66,25 +32,7 @@
     state: present
   register: network
 
-- name: 03.02 Gather the network info
-  tags:
-    - subnets
-    - basic
-  gcp_compute_network_info:
-    filters:
-    - name = network-dmm
-    project:              "{{ project              }}"
-    auth_kind:            "{{ auth_kind            }}"
-    service_account_file: "{{ service_account_file }}"
-
-- name: 03.03 Print the network info
-  tags:
-    - subnets
-    - basic
-  debug:
-    var=network
-
-- name: 03.04 create a firewall
+- name: 03.02 create a firewall
   tags:
     - subnets
   gcp_compute_firewall:
@@ -99,13 +47,28 @@
     service_account_file: "{{ service_account_file }}"
     state:                present
 
-- name: 04.01 Create the disk for workstation 
+##### Workstation nodes
+- name: 04.01  Allocate the gateway for workstation
+  tags:
+    - basic
+    - gateway
+  gcp_compute_address:
+    state:                present
+    name:                 'gw-dmm-ws'
+    region:               'asia-northeast1'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    scopes:               "{{ scopes               }}"
+  register: ipaddr
+
+- name: 04.02 Create the disk for workstation 
   tags:
     - workstation
   gcp_compute_disk:
     name:                 disk-dmm-ws
     source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
-    size_gb:              50
+    size_gb:              100
     zone:                 'asia-northeast1-a'
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
@@ -113,11 +76,11 @@
     state:                present
   register: disk_dmm_ws
 
-- name: 04.02 Print the disk for workstation
-  tags:
-    - workstation
-  debug:
-    var=disk_dmm_ws
+  #- name: 04.03 Print the disk for workstation
+  #  tags:
+  #    - workstation
+  #  debug:
+  #    var=disk_dmm_ws
 
 - name: 04.03 Create the workstation instance
   tags:
@@ -152,25 +115,7 @@
     service_account_file: "{{ service_account_file }}"
     state: present
 
-- name: get info on an instance
-  tags:
-    - workstation
-  gcp_compute_instance_info:
-    filters:
-    - labels.component = workstation
-    zone:                 'asia-northeast1-a'
-    project:              "{{ project              }}"
-    auth_kind:            "{{ auth_kind            }}"
-    service_account_file: "{{ service_account_file }}"
-  register: instanceGroup
-
-- name: Pring the instance
-  tags:
-    - workstation
-  debug:
-    var=instanceGroup
-
-
+##### Prepare the pds nodes
 - name: 05.01 Create the disk for pds
   tags:
     - pd
@@ -188,13 +133,7 @@
   with_indexed_items: "{{ zones }}"
   register: disk_dmm_pd
 
-- name: 05.02 Print the disk for pds
-  tags:
-    - pd
-  debug:
-    msg: "The message is {{ disk_dmm_pd.results | length }}"
-
-- name: 05.03 Create the pd instance
+- name: 05.02 Create the pd instance
   tags:
     - pd
   gcp_compute_instance:
@@ -224,7 +163,81 @@
     state: present
   with_indexed_items: "{{ disk_dmm_pd.results }}"
 
-  ##################### Createt the KV instance
+- name: 05.03 Get all the nodes and prepare the instance group 
+  tags:
+    - pd
+  gcp_zones_compute_instance_info:
+    filters:
+    - labels.component = pd
+    region:               'asia-northeast1'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    scopes:               "{{ scopes               }}"
+  register: pdInstances
+
+- name: 05.04 Prepare the health check
+  tags:
+    - pd
+  gcp_compute_health_check:
+    name: checkpdstatus
+    type: TCP
+    tcp_health_check:
+      port: 4000
+      request: ping
+      response: pong
+    healthy_threshold: 10
+    timeout_sec: 2
+    unhealthy_threshold: 5
+    project:              "{{ project                       }}"
+    auth_kind:            "{{ auth_kind                     }}"
+    service_account_file: "{{ service_account_file          }}"
+    state: present
+  register: pdhealthcheck
+
+- name: 05.05 Create target pool from the instances
+  tags:
+    - pd
+  gcp_compute_target_pool:
+    name: pdtargetpool
+    instances:            "{{ [ pdInstances['resources'] | first ] }}"
+    #health_check:         "{{ healthcheck                }}"
+    region:               'asia-northeast1'
+    project:              "{{ project                    }}"
+    auth_kind:            "{{ auth_kind                  }}"
+    service_account_file: "{{ service_account_file       }}"
+    state: present
+  register: pdtargetpool
+
+- name: 05.06 Allocate the gateway
+  tags:
+    - pd
+  gcp_compute_address:
+    state:                present
+    name:                 'pd-gateway'
+    region:               'asia-northeast1'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    scopes:               "{{ scopes               }}"
+  register: pdGateway
+
+- name: 05.06 create a forwarding rule from ip addr to target pool
+  tags:
+    - pd
+  gcp_compute_forwarding_rule:
+    name:                 dmmpdgateway
+    region:               'asia-northeast1'
+    target:               "{{ pdtargetpool         }}"
+    ip_protocol:          TCP
+    port_range:           2379-2379
+    ip_address:           "{{ pdGateway.address    }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+
+##### Prepare the kvs nodes
 - name: 06.01 Create the disk for kvs
   tags:
     - kv
@@ -242,13 +255,7 @@
   with_indexed_items: "{{ zones }}"
   register: disk_dmm_kv
 
-- name: 06.02 Print the disk for kvs
-  tags:
-    - kv
-  debug:
-    msg: "The message is {{ disk_dmm_kv.results | length }}"
-
-- name: 05.03 Create the kv instance
+- name: 06.02 Create the kv instance
   tags:
     - kv
   gcp_compute_instance:
@@ -278,12 +285,11 @@
     state: present
   with_indexed_items: "{{ disk_dmm_kv.results }}"
 
-  ##################### Createt the addition KV instance 
-- name: 06.01 Create the disk for kvs
+- name: 06.03 Create the disk for kvs's scale out
   tags:
-    - add-kv
+    - kv
   gcp_compute_disk:
-    name:                 "disk-dmm-kv-v2-{{ item.0 }}"
+    name:                 "disk-dmm-kv-scale-{{ item.0 }}"
     source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
     size_gb:              100
     zone:                 "{{ item.1 }}"
@@ -292,22 +298,16 @@
     service_account_file: "{{ service_account_file }}"
     state:                present
     labels:
-      component:          "kv"
-  with_indexed_items: "{{ [ zones | first ]  + [ zones | last ] }}"
-  register: disk_dmm_kv_v02
+      component:          "scale-kv"
+  with_indexed_items: "{{ zones }}"
+  register: disk_dmm_kv_scale
 
-- name: 06.02 Print the disk for kvs
+- name: 06.04 Create the kv instance for scale out
   tags:
-    - add-kv
-  debug:
-    msg: "The message is {{ disk_dmm_kv_v02.results | length }}"
-
-- name: 05.03 Create the kv instance
-  tags:
-    - add-kv
+    - kv
   gcp_compute_instance:
-    name:          "ins-dmm-kv-v2-{{ item.0 }}"
-    machine_type:  n1-standard-1
+    name:          "ins-dmm-kv-scale-{{ item.0 }}"
+    machine_type:  n1-standard-8
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -322,7 +322,7 @@
       cost-center: '12345'
     labels:
       environment: dmm
-      component:   kv
+      component:          "scale-kv"
     network_interfaces:
     - network:            "{{ network              }}"
     zone:                 "{{ item.1.item[1]       }}"
@@ -330,8 +330,9 @@
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
     state: present
-  with_indexed_items: "{{ disk_dmm_kv_v02.results }}"
+  with_indexed_items: "{{ disk_dmm_kv_scale.results }}"
 
+##### Prepare the tidb nodes
 - name: 07.01 Create the disk for tidbs
   tags:
     - tidb
@@ -349,18 +350,12 @@
   with_indexed_items: "{{ zones }}"
   register: disk_dmm_tidb
 
-- name: 06.02 Print the disk for tidbs
-  tags:
-    - tidb
-  debug:
-    msg: "The message is {{ disk_dmm_tidb.results | length }}"
-
-- name: 05.03 Create the tidb instance
+- name: 07.02 Create the tidb instance
   tags:
     - tidb
   gcp_compute_instance:
     name:          "ins-dmm-tidb-{{ item.0 }}"
-    machine_type:  n1-standard-1
+    machine_type:  n1-standard-8
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -385,7 +380,7 @@
     state: present
   with_indexed_items: "{{ disk_dmm_tidb.results }}"
 
-- name: Get all the IPs of each component
+- name: 07.03 Get all the nodes and prepare the instance group 
   tags:
     - tidb
   gcp_zones_compute_instance_info:
@@ -398,14 +393,7 @@
     scopes:               "{{ scopes               }}"
   register: tidbInstances
 
-- name: Print all the instances
-  when: true
-  tags:
-    - tidb
-  debug:
-    var=tidbInstances['resources']
-
-- name: create a health check
+- name: 07.04 Prepare the health check
   tags:
     - tidb
   gcp_compute_health_check:
@@ -424,13 +412,7 @@
     state: present
   register: healthcheck
 
-- name: FFFFFFFFFFFFFFFFF
-  tags:
-    - tidb
-  debug:
-    var=healthcheck
-
-- name: create a target pool
+- name: 07.05 Create target pool from the instances
   tags:
     - tidb
   gcp_compute_target_pool:
@@ -444,7 +426,7 @@
     state: present
   register: targetpool
 
-- name: 01.01  Allocate the gateway
+- name: 07.06 Allocate the gateway
   tags:
     - tidb
   gcp_compute_address:
@@ -457,112 +439,70 @@
     scopes:               "{{ scopes               }}"
   register: tidbGateway
 
-- name: create a forwarding rule
+- name: 07.06 create a forwarding rule from ip addr to target pool
   tags:
     - tidb
   gcp_compute_forwarding_rule:
-    name: dmmgateway
+    name:                 dmmgateway
     region:               'asia-northeast1'
-    target: "{{ targetpool }}"
-    ip_protocol: TCP
-    port_range: 4000-4000
-    ip_address: "{{  tidbGateway.address }}"
-    project:              "{{ project                    }}"
-    auth_kind:            "{{ auth_kind                  }}"
-    service_account_file: "{{ service_account_file       }}"
+    target:               "{{ targetpool           }}"
+    ip_protocol:          TCP
+    port_range:           4000-4000
+    ip_address:           "{{ tidbGateway.address  }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+
+- name: 07.07 Create the disk for tidbs's scale out
+  tags:
+    - tidb
+  gcp_compute_disk:
+    name:                 "disk-dmm-tidb-scale-{{ item.0 }}"
+    source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
+    size_gb:              20
+    zone:                 "{{ item.1               }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present
+    labels:
+      component:          "scale-tidb"
+  with_indexed_items: "{{ zones }}"
+  register: disk_dmm_tidb_scale
+
+- name: 07.08 Create the tidb instance's scale out
+  tags:
+    - tidb
+  gcp_compute_instance:
+    name:          "ins-dmm-tidb-scale-{{ item.0 }}"
+    machine_type:  n1-standard-8
+    disks:
+    - auto_delete: 'true'
+      boot:        'true'
+      source:      "{{ item.1 }}"
+    - auto_delete: 'true'
+      interface:   NVME
+      type:        SCRATCH
+      initialize_params:
+        disk_type: local-ssd
+    metadata:
+      startup-script-url: gs:://graphite-playground/bootstrap.sh
+      cost-center: '12345'
+    labels:
+      environment: dmm
+      component:   scale-tidb
+    network_interfaces:
+    - network:            "{{ network              }}"
+    zone:                 "{{ item.1.item[1]       }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
     state: present
+  with_indexed_items: "{{ disk_dmm_tidb_scale.results }}"
 
-#- name: Print all the instances
-#  when: false
-#  tags:
-#    - tidb
-#  debug:
-#    msg: " This is the message {{ item.1['zone'].split('/')[-1] }}"
-#  with_indexed_items: "{{ tidbInstances['resources'] }}"
-#
-#- name: 04.01 Create the group
-#  tags:
-#    - tidb
-#  gcp_compute_instance_group:
-#    name:                 "dmmtidbgroup{{item.0}}"
-#    named_ports:
-#    - name: tidb
-#      port: 4000
-#    instances:            "{{ [ item.1 ]                    }}"
-#    network:              "{{ network                       }}"
-#    zone:                 "{{ item.1['zone'].split('/')[-1] }}"
-#    project:              "{{ project                       }}"
-#    auth_kind:            "{{ auth_kind                     }}"
-#    service_account_file: "{{ service_account_file          }}"
-#    state:                present
-#  with_indexed_items: "{{ tidbInstances['resources'] }}"
-#  register: groupinstance
-#
-#- name: Set tall the group instance
-#  tags:
-#    - tidb
-#  set_fact:
-#    listGroupInstance: "{{ groupinstance.results | map(attribute='selfLink') | list }}" 
-#
-#- name: Print the listGroupInstance
-#  when: true
-#  tags:
-#    - tidb
-#  debug:
-#    var=listGroupInstance
-#
-#- name: print the group instance
-#  when: false
-#  tags:
-#    - tidb
-#  debug:
-#    var=item['selfLink']
-#  with_items: "{{ groupinstance.results }}"
-#
-#- name: create a health check
-#  tags:
-#    - tidb
-#  gcp_compute_health_check:
-#    name: checktidbstatus
-#    type: TCP
-#    tcp_health_check:
-#      port: 4000
-#      request: ping
-#      response: pong
-#    healthy_threshold: 10
-#    timeout_sec: 2
-#    unhealthy_threshold: 5
-#    project:              "{{ project                       }}"
-#    auth_kind:            "{{ auth_kind                     }}"
-#    service_account_file: "{{ service_account_file          }}"
-#    state: present
-#  register: healthcheck
-#
-#- name: create a tidb backend service
-#  when: true
-#  tags:
-#    - tidb
-#  gcp_compute_backend_service:
-#    name: backendservice01
-#    backends:
-##    - group: "{{ instancegroup.selfLink }}"
-##    - group: "{{ listGroupInstance }}"
-#    - group: "https://www.googleapis.com/compute/v1/projects/dbaas-test-268007/zones/asia-northeast1-b/instanceGroups/dmmtidbgroup0"
-#    - group: "https://www.googleapis.com/compute/v1/projects/dbaas-test-268007/zones/asia-northeast1-c/instanceGroups/dmmtidbgroup1"
-#    - group: "https://www.googleapis.com/compute/v1/projects/dbaas-test-268007/zones/asia-northeast1-a/instanceGroups/dmmtidbgroup2"
-#    load_balancing_scheme: 'INTERNAL_SELF_MANAGED'
-#    health_checks:
-#    - "{{ healthcheck.selfLink }}"
-#    protocol: 'TCP'
-#    #enable_cdn: 'true'
-#    project:              "{{ project                       }}"
-#    auth_kind:            "{{ auth_kind                     }}"
-#    service_account_file: "{{ service_account_file          }}"
-#    state: present
-
-
-##################################
-- name: 07.01 Create the disk for dm
+##### Create the nodes for dm
+- name: 08.01 Create the disk for dm
   tags:
     - dm
   gcp_compute_disk:
@@ -579,18 +519,12 @@
   with_indexed_items: "{{ zones }}"
   register: disk_dmm_dm
 
-- name: 06.02 Print the disk for tidbs
-  tags:
-    - dm
-  debug:
-    msg: "The message is {{ disk_dmm_dm.results | length }}"
-
-- name: 05.03 Create the tidb instance
+- name: 08.02 Create the tidb instance
   tags:
     - dm
   gcp_compute_instance:
     name:          "ins-dmm-dm-{{ item.0 }}"
-    machine_type:  n1-standard-4
+    machine_type:  n1-standard-1
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -615,4 +549,3 @@
     state:                present
   with_indexed_items: "{{ disk_dmm_dm.results }}"
 
-###################################

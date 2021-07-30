@@ -1,0 +1,9 @@
+#!/bin/bash
+TABLES="customer district history item new_order order_line orders stock warehouse "
+for table in $TABLES
+do
+  echo "----- ----- ----- Table name: $table"
+  dumpling -u root -P 4000 -h 34.84.33.82 --filetype csv -o /tmp/csvdata -t 8 -T test.$table
+  gsutil mv test.${table}.000000000.csv gs://tidbjaytest/tidbtest/
+  gsutil mv test.${table}-schema.sql gs://tidbjaytest/tidbtest/
+done

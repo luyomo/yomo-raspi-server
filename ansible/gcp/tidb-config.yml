@@ -3,8 +3,8 @@
 - hosts: servers
   gather_facts: True
   vars:
-    service_account_file: /etc/gcp/dbaas-test-268007.json
-    project: dbaas-test-268007
+    service_account_file: /etc/gcp/sales-demo.json
+    project: sales-demo-321300
     auth_kind: serviceaccount
     scopes:
       - https://www.googleapis.com/auth/compute
@@ -16,4 +16,4 @@
   gather_facts: True
 
   roles:
-    - ./roles/ycsb
+    - ./roles/tidb-config

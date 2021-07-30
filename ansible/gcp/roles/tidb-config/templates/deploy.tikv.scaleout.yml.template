@@ -1,0 +1,4 @@
+tikv_servers:
+{% for ip in componentIPs['scale-kv'] %}
+  - host: {{ ip }}
+{% endfor %}

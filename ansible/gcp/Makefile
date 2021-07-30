@@ -1,4 +1,5 @@
-servers: zones subnets gateway workstation pd kv tidb dm
+servers:
+	ansible-playbook -i inventories/hosts.yml servers.yml
 
 zones:
 	ansible-playbook -i inventories/hosts.yml servers.yml --tags "zones"
@@ -24,8 +25,8 @@ tidb:
 dm:
 	ansible-playbook -i inventories/hosts.yml servers.yml --tags "dm,basic"
 
-ycsb:
-	ansible-playbook -i inventories/hosts.yml ycsb.yml
+tidb-config:
+	ansible-playbook -i inventories/hosts.yml tidb-config.yml
 
 tiup:
 	ansible-playbook -i inventories/hosts.yml tiup.yml --vault-password-file .passwd
@@ -38,3 +39,6 @@ start-dm:
 
 add-kv:
 	ansible-playbook -i inventories/hosts.yml servers.yml --tags "add-kv,basic"
+
+backup:
+	ansible-playbook -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3' backup.yml

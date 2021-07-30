@@ -1,0 +1,62 @@
+- name: Get the data from upstream tasks
+  set_fact:
+    componentIPs: "{{ hostvars['localhost'].get('componentIPs')['resources'] }}"
+
+    #- name: Print all the IPS
+    #  debug:
+    #    var=componentIPs
+    #
+    #- name: Print PD Ips
+    #  debug:
+    #    var=PD_IPS
+
+- name: 01. Prepare the workstation 
+  become: yes
+  file:
+    path: /etc/tidb
+    state: directory
+    mode: '0755'
+
+- name: 02. Deploy all the templates
+  become: yes
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/etc/tidb/{{ item.dest }}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "initServers.sh.template"            ,     dest: "initServers.sh"             , mode: "0755" }
+    - {src: "deploy.yml.template"                ,     dest: "deploy.yml"                 , mode: "0644" }
+    - {src: "deploy.tidb.scaleout.yml.template"  ,     dest: "deploy.tidb.scaleout.yml"   , mode: "0644" }
+    - {src: "deploy.tikv.scaleout.yml.template"  ,     dest: "deploy.tikv.scaleout.yml"   , mode: "0644" }
+    - {src: "write-kv.sh.template"               ,     dest: "write-kv.sh"                , mode: "0755" }
+    - {src: "read-kv.sh.template"                ,     dest: "read-kv.sh"                 , mode: "0755" }
+    - {src: "startTIDB.sh"                       ,     dest: "startTIDB.sh"               , mode: "0755" }
+    - {src: "setDashboard.sh.template"           ,     dest: "setDashboard.sh"            , mode: "0755" }
+    - {src: "export.sh.template"                 ,     dest: "export.sh"                  , mode: "0755" }
+    - {src: "tidb-lightning.toml.template"       ,     dest: "tidb-lightning.toml"        , mode: "0755" }
+
+- name: 02. Deploy the private key
+  ansible.builtin.copy:
+    src:  ~/.ssh/id_rsa
+    dest: ~/.ssh/id_rsa
+    mode: "0400"
+
+      #- name: Check the cluster status
+      #  when: false
+      #  shell: /home/jay_zhang_pingcap_com/.tiup/bin/tiup cluster display dmmtest
+      #  ignore_errors: yes
+      #  register: clusterSts
+      #
+      #- name: debug
+      #  when: false
+      #  debug:
+      #    var=clusterSts
+      #
+      #- name: Init the server
+      #  when: false
+      #  #when: clusterSts.rc == 1
+      #  shell: "{{ item }}"
+      #  with_items:
+      #    - /opt/ycsb/initServers.sh
+      #    - echo 'y' | /home/jay_zhang_pingcap_com/.tiup/bin/tiup cluster deploy dmmtest v5.1.0 /opt/ycsb/deploy.yml
+      #    - /home/jay_zhang_pingcap_com/.tiup/bin/tiup cluster start dmmtest

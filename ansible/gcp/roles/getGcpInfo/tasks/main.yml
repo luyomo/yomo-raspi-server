@@ -37,12 +37,12 @@
   add_host:
     name: tidb_workstation
     ansible_ssh_host: "{{ componentIPs['resources']['externalIP'] }}"
-    ansible_ssh_user: 'jay_zhang_pingcap_com'
+    ansible_ssh_user: 'jay_zhang'
     ansible_ssh_port: '22'
 
 - name: Add a host alias that we reach through a tunnel (Ansible 1.9 and older)
   add_host:
     name: mysql
     ansible_ssh_host: "{{ componentIPs['resources']['externalIP'] }}"
-    ansible_ssh_user: 'jay_zhang_pingcap_com'
+    ansible_ssh_user: 'jay_zhang'
     ansible_ssh_port: '22'

@@ -388,9 +388,36 @@ mysql -u root -h tidb.7976c5f1.8a20149b.ap-southeast-1.shared.aws.tidbcloud.com 
 
 * DM deployment
 
-* Prepare the data
-tiup bench tpcc --warehouses 100 --parts 4 prepare -H 10.146.15.210
+* Presentation
+** preparation
+*** make all the vm servers on the GCP
+make servers
+*** install the tiup through ansible
+remove the entry in the knows_host
+make tiup
+*** deploy the yaml file
+make tidb-config
+** deploy the tidb cluster 
+ssh jay_zhang@34.146.245.239
+tiup cluster deploy dmmtest v5.1.0 ./deploy.yml
+tiup cluster start dmmtest
+   + Confirme the mysql connection 
+      mysql -h 34.84.33.82 -u root -P 4000
+      select tidb_version()
+   + Open the dashboard
+   /etc/tidb/setDashboard.sh
+   http://35.189.141.234:2379/dashboard
+   + Open the grafana
+   http://34.146.245.239:3000
 
+** Restore the data back to data
+gcloud init
+
+tiup bench tpcc --warehouses 100 --parts 4 prepare -H 10.146.15.210
+tiup bench tpcc --warehouses 1000 --parts 4 prepare -T 16 -H 10.146.0.53
 
 
 https://console.cloud.google.com/net-services/loadbalancing/details/internal/asia-northeast1/lb-dmm-tidb?project=dbaas-test-268007&organizationId=478164292948
+
+
+tiup ctl:v5.1.0 pd -u http://10.146.0.34:2379 config set dashboard-address http://10.146.0.34:2379

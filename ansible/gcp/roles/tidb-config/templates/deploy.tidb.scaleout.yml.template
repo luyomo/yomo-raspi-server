@@ -1,0 +1,4 @@
+tidb_servers:
+{% for ip in componentIPs['scale-tidb'] %}
+  - host: {{ ip }}
+{% endfor %}

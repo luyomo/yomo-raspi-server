@@ -3,19 +3,23 @@
 - hosts: servers
   gather_facts: True
   vars:
-    auth_kind: serviceaccount
     service_account_file: /etc/gcp/sales-demo.json
     project: sales-demo-321300
+    auth_kind: serviceaccount
     scopes:
       - https://www.googleapis.com/auth/compute
-        #  environment:
-        #PYTHONPATH: "{{ ansible_env.PYTHONPATH }}:/my/path"
 
   roles:
-      - ./roles/getGcpInfo
+    - ./roles/getGcpInfo
 
 - hosts: tidb_workstation
   gather_facts: True
+  vars:
+    service_account_file: /etc/gcp/sales-demo.json
+    project: sales-demo-321300
+    auth_kind: serviceaccount
+    scopes:
+      - https://www.googleapis.com/auth/compute
 
   roles:
-      - ../roles/tiup
+    - ./roles/backup

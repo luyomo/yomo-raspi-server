@@ -1,0 +1,15 @@
+[lightning]
+level = "info"
+file = "/tmp/tidb-lightning.log"
+[tikv-importer]
+backend = "local"
+sorted-kv-dir = "/tmp/sorted-kv-dir"
+[mydumper]
+data-source-dir = "/tmp/csvdata"
+[tidb]
+host = "{{componentIPs['externalIP']}}"
+port = 4000
+user = "root"
+password = ""
+status-port = 10080
+pd-addr = "{{componentIPs['pd'] | first}}:2379"

@@ -1,0 +1,71 @@
+- name: 02.01 tiup bin download
+  get_url:
+    url: https://tiup-mirrors.pingcap.com/install.sh
+    dest: /tmp/install.sh
+    owner: "{{TIDB_USER}}"
+    group: "{{TIDB_USER}}"
+    mode: "0755"
+
+- name: 02.02 tiup installation
+  become: yes
+  become_user: "{{TIDB_USER}}"
+  shell: /tmp/install.sh
+
+- name: 02.03 Add the search path into ~/.bashrc
+  become: yes 
+  lineinfile:
+    path: "/home/{{TIDB_USER}}/.bashrc"
+    line: "export PATH=/home/{{TIDB_USER}}/.tiup/bin:$PATH"
+
+- name: 03.03 config file
+  become: yes
+  copy:
+    dest: "/home/{{TIDB_USER}}/.ssh/config"
+    content: StrictHostKeyChecking no
+    owner: "{{TIDB_USER}}"
+    group: "{{TIDB_USER}}"
+    mode: "0600"
+
+- name: Install the required packages
+  become: yes
+  when: ansible_os_family == "Debian"
+  ansible.builtin.apt:
+    name:
+      - mariadb-client
+      - build-essential
+      - git
+      - gcc
+    update_cache: yes
+
+- name: Install the required packages
+  become: yes
+  when: ansible_os_family in  [ "CentOS" , "RedHat" ]
+  ansible.builtin.package:
+    name:
+      - mariadb
+      - git
+      - gcc
+
+- name: 12.01 Golang installation
+  become: yes
+  unarchive:
+    src: https://golang.org/dl/go1.16.6.linux-amd64.tar.gz
+    remote_src: yes
+    dest: /usr/local
+
+- name: 12.02 Add go path
+  lineinfile:
+    path: ~/.bashrc
+    line: "export PATH=/usr/local/go/bin:$PATH"
+
+- name: 13.01 Download the tidb tookit
+  become: yes
+  unarchive:
+    src: https://download.pingcap.org/tidb-toolkit-v5.1.0-linux-amd64.tar.gz
+    dest: /opt/
+    remote_src: yes
+
+- name: 13.02 Add go path
+  lineinfile:
+    path: ~/.bashrc
+    line: "export PATH=/opt/tidb-toolkit-v5.1.0-linux-amd64/bin:$PATH"
