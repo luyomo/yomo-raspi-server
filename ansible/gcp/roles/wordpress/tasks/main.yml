@@ -9,9 +9,13 @@
 - name: Pull wordpres images from remote
   become: yes
   become_user: mysql
-  docker_image:
-    name: wordpress
-    source: pull
+  shell: docker pull wordpress
+    #- name: Pull wordpres images from remote
+    #  become: yes
+    #  become_user: mysql
+    #  docker_image:
+    #    name: wordpress
+    #    source: pull
 
 - name: directory preparation
   become: yes

@@ -33,7 +33,11 @@
     - {src: "startTIDB.sh"                       ,     dest: "startTIDB.sh"               , mode: "0755" }
     - {src: "setDashboard.sh.template"           ,     dest: "setDashboard.sh"            , mode: "0755" }
     - {src: "export.sh.template"                 ,     dest: "export.sh"                  , mode: "0755" }
+    - {src: "export_tpch.sh"                     ,     dest: "export_tpch.sh"             , mode: "0755" }
     - {src: "tidb-lightning.toml.template"       ,     dest: "tidb-lightning.toml"        , mode: "0755" }
+    - {src: "downloadTestData.sh"                ,     dest: "downloadTestData.sh"        , mode: "0755" }
+    - {src: "restoreData.sh"                     ,     dest: "restoreData.sh"             , mode: "0755" }
+    - {src: "enableTiFlash.sh"                   ,     dest: "enableTiFlash.sh"           , mode: "0755" }
 
 - name: 02. Deploy the private key
   ansible.builtin.copy:
@@ -41,22 +45,11 @@
     dest: ~/.ssh/id_rsa
     mode: "0400"
 
-      #- name: Check the cluster status
-      #  when: false
-      #  shell: /home/jay_zhang_pingcap_com/.tiup/bin/tiup cluster display dmmtest
-      #  ignore_errors: yes
-      #  register: clusterSts
-      #
-      #- name: debug
-      #  when: false
-      #  debug:
-      #    var=clusterSts
-      #
-      #- name: Init the server
-      #  when: false
-      #  #when: clusterSts.rc == 1
-      #  shell: "{{ item }}"
-      #  with_items:
-      #    - /opt/ycsb/initServers.sh
-      #    - echo 'y' | /home/jay_zhang_pingcap_com/.tiup/bin/tiup cluster deploy dmmtest v5.1.0 /opt/ycsb/deploy.yml
-      #    - /home/jay_zhang_pingcap_com/.tiup/bin/tiup cluster start dmmtest
+- name: 02.02 config file
+  become: yes
+  copy:
+    dest: "/home/{{TIDB_USER}}/.ssh/config"
+    content: StrictHostKeyChecking no
+    owner: "{{TIDB_USER}}"
+    group: "{{TIDB_USER}}"
+    mode: "0600"

@@ -10,3 +10,7 @@ services:
       WORDPRESS_DB_HOST: {{ gatewayIP }}:3306
       WORDPRESS_DB_USER: {{ MYSQL_DBUSER }}
       WORDPRESS_DB_PASSWORD: {{ MYSQL_DBPASSWD }}
+    networks:
+      - wordpress_mariadb
+networks:
+  wordpress_mariadb:

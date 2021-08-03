@@ -14,9 +14,13 @@
 - name: Pull mariadb images from remote
   become: yes
   become_user: mysql
-  docker_image:
-    name: mariadb
-    source: pull
+  shell: docker pull mariadb
+    #- name: Pull mariadb images from remote
+    #  become: yes
+    #  become_user: mysql
+    #  docker_image:
+    #    name: mariadb
+    #    source: pull
 
 - name: directory preparation
   become: yes

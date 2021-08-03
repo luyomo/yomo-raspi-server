@@ -1,0 +1,101 @@
+- name: 01.01 Get all the nodes and prepare the instance group 
+  tags:
+    - tidb
+  gcp_zones_compute_instance_info:
+    filters:
+    - labels.tidb = true
+    region:               'asia-northeast1'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    scopes:               "{{ scopes               }}"
+  register: tidbInstances
+
+- name: 01.02 Prepare the health check
+  tags:
+    - tidb
+  gcp_compute_health_check:
+    name: checktidbstatus
+    type: TCP
+    tcp_health_check:
+      port: 4000
+      request: ping
+      response: pong
+    healthy_threshold: 10
+    timeout_sec: 2
+    unhealthy_threshold: 5
+    project:              "{{ project                       }}"
+    auth_kind:            "{{ auth_kind                     }}"
+    service_account_file: "{{ service_account_file          }}"
+    state: present
+  register: healthcheck
+
+- name: 01.03 drop the forwarding rule
+  tags:
+    - tidb
+  gcp_compute_forwarding_rule:
+    name:                 dmmgateway
+    region:               'asia-northeast1'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                absent
+
+- name: 01.04 Drop target pool from the instances
+  tags:
+    - tidb
+  gcp_compute_target_pool:
+    name: tidbtargetpool
+    region:               'asia-northeast1'
+    project:              "{{ project                    }}"
+    auth_kind:            "{{ auth_kind                  }}"
+    service_account_file: "{{ service_account_file       }}"
+    state: absent
+
+- name: Debuging
+  tags:
+    - tidb
+  debug:
+    var=tidbInstances['resources']
+
+- name: 02.01 Create target pool from the instances
+  tags:
+    - tidb
+  gcp_compute_target_pool:
+    name: tidbtargetpool
+    instances:            "{{ tidbInstances['resources'] }}"
+    #health_check:         "{{ healthcheck                }}"
+    region:               'asia-northeast1'
+    project:              "{{ project                    }}"
+    auth_kind:            "{{ auth_kind                  }}"
+    service_account_file: "{{ service_account_file       }}"
+    state: present
+  register: targetpool
+
+- name: 02.02 Allocate the gateway
+  tags:
+    - tidb
+  gcp_compute_address:
+    state:                present
+    name:                 'tidb-gateway'
+    region:               'asia-northeast1'
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    scopes:               "{{ scopes               }}"
+  register: tidbGateway
+
+- name: 02.03 create a forwarding rule from ip addr to target pool
+  tags:
+    - tidb
+  gcp_compute_forwarding_rule:
+    name:                 dmmgateway
+    region:               'asia-northeast1'
+    target:               "{{ targetpool           }}"
+    ip_protocol:          TCP
+    port_range:           4000-4000
+    ip_address:           "{{ tidbGateway.address  }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+    state:                present

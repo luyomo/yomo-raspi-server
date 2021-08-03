@@ -32,13 +32,19 @@ tiup:
 	ansible-playbook -i inventories/hosts.yml tiup.yml --vault-password-file .passwd
 
 wordpress:
-	ansible-playbook -i inventories/hosts.yml wordpress.yml
+	ansible-playbook -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3' wordpress.yml
 
 start-dm:
 	ansible-playbook -i inventories/hosts.yml start-dm.yml
+
+swap-wordpress:
+	ansible-playbook -i inventories/hosts.yml start-dm.yml --tags "swap_wordpress"
 
 add-kv:
 	ansible-playbook -i inventories/hosts.yml servers.yml --tags "add-kv,basic"
 
 backup:
 	ansible-playbook -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3' backup.yml
+
+add-tidb:
+	ansible-playbook -i inventories/hosts.yml -e 'ansible_python_interpreter=/usr/bin/python3' addTidb.yml

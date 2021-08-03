@@ -1,8 +1,12 @@
 - name: Get the data from upstream tasks
+  tags:
+    - dm
   set_fact:
     componentIPs: "{{ hostvars['localhost'].get('componentIPs')['resources'] }}"
 
 - name: Start service dm-master/dm-worker, if not started
+  tags:
+    - dm
   become: true
   ansible.builtin.service:
     name: "{{ item }}"
@@ -12,12 +16,20 @@
     - dm-worker
 
 - name: Start the task
+  tags:
+    - dm
   shell: "{{ item }}"
   with_items:
     - "/opt/dm-v2.0.4-linux-amd64/bin/dmctl --master-addr {{ componentIPs['workstation'] | first }}:8261 operate-source create /var/dm/source.yaml"
     - "/opt/dm-v2.0.4-linux-amd64/bin/dmctl --master-addr {{ componentIPs['workstation'] | first }}:8261 start-task /var/dm/task.yaml"
 
-- name: Start the mariadb
+- name: Swap the wordpress between mariadb and tidb
+  when: false
+  tags:
+    - swap_wordpress
   become: yes
   become_user: mysql
-  shell: /usr/bin/docker-compose -f /var/docker-compose/wordpress/docker-compose.tidb.yml up -d
+  shell: "{{ item  }}"
+  with_items:
+      - /usr/bin/docker-compose -f /var/docker-compose/wordpress/docker-compose.yml down
+      - /usr/bin/docker-compose -f /var/docker-compose/wordpress/docker-compose.tidb.yml up -d

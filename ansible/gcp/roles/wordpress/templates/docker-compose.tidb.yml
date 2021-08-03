@@ -10,3 +10,7 @@ services:
       WORDPRESS_DB_HOST: {{ componentIPs['tidb'] | first }}:4000
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: wordpress
+    networks:
+      - wordpress_tidb
+networks:
+    wordpress_tidb:

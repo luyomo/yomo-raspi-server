@@ -16,9 +16,14 @@ tikv_servers:
 {% for ip in componentIPs['kv'] %}
   - host: {{ ip }}
 {% endfor %}
+tiflash_servers:
+{% for ip in componentIPs['tiflash'] %}
+  - host: {{ ip }}
+{% endfor %}
+
 monitoring_servers:
-  - host: {{ componentIPs['workstation'] | first }}
+  - host: {{ componentIPs['pd'] | first }}
 grafana_servers:
-  - host: {{ componentIPs['workstation'] | first }}
+  - host: {{ componentIPs['pd'] | first }}
 alertmanager_servers:
-  - host: {{ componentIPs['workstation'] | first }}
+  - host: {{ componentIPs['pd'] | first }}

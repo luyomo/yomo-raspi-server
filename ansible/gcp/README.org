@@ -392,32 +392,150 @@ mysql -u root -h tidb.7976c5f1.8a20149b.ap-southeast-1.shared.aws.tidbcloud.com 
 ** preparation
 *** make all the vm servers on the GCP
 make servers
-*** install the tiup through ansible
-remove the entry in the knows_host
-make tiup
-*** deploy the yaml file
-make tidb-config
-** deploy the tidb cluster 
-ssh jay_zhang@34.146.245.239
-tiup cluster deploy dmmtest v5.1.0 ./deploy.yml
-tiup cluster start dmmtest
-   + Confirme the mysql connection 
-      mysql -h 34.84.33.82 -u root -P 4000
-      select tidb_version()
-   + Open the dashboard
-   /etc/tidb/setDashboard.sh
-   http://35.189.141.234:2379/dashboard
-   + Open the grafana
-   http://34.146.245.239:3000
+https://console.cloud.google.com/compute/instances?project=sales-demo-321300
 
 ** Restore the data back to data
 gcloud init
+gsutil cp gs://tidbjaytest/tidbtest/tpcc.tar.gz /DATA/
 
-tiup bench tpcc --warehouses 100 --parts 4 prepare -H 10.146.15.210
-tiup bench tpcc --warehouses 1000 --parts 4 prepare -T 16 -H 10.146.0.53
+** remove the entry in the knows_host
 
+*** install the tiup through ansible
+make tiup
+https://docs.pingcap.com/tidb/stable/production-deployment-using-tiup
+curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh
+source .bashrc
+*** deploy the yaml file
+make tidb-config
+** deploy the tidb cluster 
+mariadb-client
+https://docs.pingcap.com/tidb/stable/production-deployment-using-tiup
+ssh jay_zhang@34.146.245.239
+tiup cluster deploy dmmtest v5.1.0 ./deploy.yml
+tiup cluster start dmmtest
+
+** Import the data into tidb
+tidb-lightning --config=/etc/tidb/tidb-lightning.toml --check-requirements=false
+
+tiup br backup full --pd "127.0.0.1:2379" -s "local:///DATA/backup"
+How to do the incremental backup
+tiup br restore full --pd "127.0.0.1:2379" -s "local:///DATA/backup"
+
+
+** todo
+2. Add the scale out tidb nodes into load balancing
+
+tiup bench tpcc --warehouses 300 --parts 4 prepare -T 16 -D tpcc -H 35.187.213.46
+tiup bench tpcc --warehouses 1000 --parts 4 prepare -T 16 -H 35.187.213.46
+
+tiup bench tpcc --warehouses 100 -H 35.187.213.46 -D tpcc -T 36 run
+
+https://docs.google.com/spreadsheets/d/1QgX7RpuueBBsQN-58nFYyah94epRnOWE4JeD638YS5I/edit#gid=919595615
+
+tiup bench tpch -H 35.187.213.46 prepare --db tpch -T 3
+tiup bench tpch -H 35.187.213.46 run --count 3 --db tpch -T 3
+tiup bench tpch -H 35.187.213.46 run --count 3 --db tpch -T 3 --queries q1
+
+set global tidb_multi_statement_mode=on;
+
+
+set @@tidb_distsql_scan_concurrency = 80;
+set @@tidb_allow_batch_cop = 1;
+set @@tidb_opt_agg_push_down = 1;
+set @@tidb_opt_distinct_agg_push_down = 1;
+set @@tidb_opt_network_factor = 0.001;
+
+set @@session.tidb_isolation_read_engines = ["tikv", "tidb", "tiflash"]
 
 https://console.cloud.google.com/net-services/loadbalancing/details/internal/asia-northeast1/lb-dmm-tidb?project=dbaas-test-268007&organizationId=478164292948
 
-
 tiup ctl:v5.1.0 pd -u http://10.146.0.34:2379 config set dashboard-address http://10.146.0.34:2379
+
+
+sudo systemctl start dm-master
+sudo systemctl start dm-worker 
+
+** Preparation
+  + vm servers
+  + gcloud init
+  + test data download
+  + config file preparation
+** TIUP 
+  + Confirme the mysql connection 
+     mysql -h 35.187.213.46 -u root -P 4000
+     select tidb_version()
+  + Open the dashboard
+  /etc/tidb/setDashboard.sh
+  http://35.189.141.234:2379/dashboard
+  + Open the grafana
+  http://35.189.141.234:3000
+
+** DATA RESTORE
+#+BEGIN_SRC
+#!/bin/bash
+
+tiup br restore full --pd "127.0.0.1:2379" -s "local:///DATA/backup"
+#+END_SRC
+
+** TPCC
+#+BEGIN_SRC
+tiup bench tpcc --warehouses 100 -H 35.187.213.46 -D tpcc -T 36 run
+#+END_SRC
+
+** Scale-out
+  + tidb scale out
+    #+BEGIN_SRC
+$more deploy.tidb.scaleout.yml
+tidb_servers:
+  - host: 10.146.15.233
+$tiup cluster scale-out tidbtest ./deploy.tidb.scaleout.yml
+    #+END_SRC
+  + tikv scale out
+    #+BEGIN_SRC
+$more deploy.tikv.scaleout.yml
+tikv_servers:
+  - host: 10.146.15.227
+$tiup cluster scale-out tidbtest ./deploy.tikv.scaleout.yml
+    #*END_SRC
+
+** OLAP
+  + tpch benchmark before tiflash enable
+    #+BEGIN_SRC
+$tiup bench tpch -H 35.187.213.46 run --count 3 --db tpch -T 3 --queries q22
+    #+END_SRC
+  + TIFLASH enabling
+    #+BEGIN_SRC
+$ more enableTiFlash.sh
+#!/bin/bash
+
+DBHOST="10.146.15.228"
+
+mysql -h $DBHOST -u root -P 4000 tpch -e "alter table customer set tiflash replica 2"
+mysql -h $DBHOST -u root -P 4000 tpch -e "alter table lineitem set tiflash replica 2"
+mysql -h $DBHOST -u root -P 4000 tpch -e "alter table nation   set tiflash replica 2"
+mysql -h $DBHOST -u root -P 4000 tpch -e "alter table orders   set tiflash replica 2"
+mysql -h $DBHOST -u root -P 4000 tpch -e "alter table part     set tiflash replica 2"
+mysql -h $DBHOST -u root -P 4000 tpch -e "alter table partsupp set tiflash replica 2"
+mysql -h $DBHOST -u root -P 4000 tpch -e "alter table region   set tiflash replica 2"
+mysql -h $DBHOST -u root -P 4000 tpch -e "alter table supplier set tiflash replica 2"
+
+MySQL [tpch]> select * from information_schema.tiflash_replica;
+    #+END_SRC
+
+** MYSQL compatibility
+  + URL reference
+    http://34.146.245.239:8000
+#+BEGIN_SRC
+$ sudo systemctl start dm-master
+$ sudo systemctl start dm-worker
+#+END_SRC
+  + Data sync confirmation
+    #+BEGIN_SRC
+mysql$select post_title from wp_posts;
+    #+END_SRC
+
+** SCALE-IN
+#+BEGIN_SRC
+$tiup cluster scale-in tidbtest --node 10.146.15.228:4000
+#+END_SRC
+
