@@ -16,8 +16,8 @@ do
   ssh $host "sudo mount -a"
 done
 
-PD_HOSTS="{{ componentIPs ['kv'] | join(' ') }}"
-for host in $PD_HOSTS
+KV_HOSTS="{{ componentIPs ['kv'] | join(' ') }}"
+for host in $KV_HOSTS
 do
   ssh $host "printf 'o\nn\np\n1\n\n+100G\nw\n' | sudo fdisk /dev/nvme0n1"
   ssh $host "sudo mkfs.xfs -f /dev/nvme0n1p1"
@@ -25,17 +25,19 @@ do
   ssh $host "sudo mount -a"
 done
 
-PD_HOSTS="{{ componentIPs ['scale-kv'] | join(' ') }}"
-for host in $PD_HOSTS
+{% if componentIPs.get['scale-kv'] is defined %}
+KV_HOSTS="{{ componentIPs ['scale-kv'] | join(' ') }}"
+for host in $KV_HOSTS
 do
   ssh $host "printf 'o\nn\np\n1\n\n+100G\nw\n' | sudo fdisk /dev/nvme0n1"
   ssh $host "sudo mkfs.xfs -f /dev/nvme0n1p1"
   ssh $host 'echo "$(sudo blkid /dev/nvme0n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab'
   ssh $host "sudo mount -a"
 done
+{% endif %}
 
-PD_HOSTS="{{ componentIPs ['tidb'] | join(' ') }}"
-for host in $PD_HOSTS
+TIDB_HOSTS="{{ componentIPs ['tidb'] | join(' ') }}"
+for host in $TIDB_HOSTS
 do
   ssh $host "printf 'o\nn\np\n1\n\n+20G\nw\n' | sudo fdisk /dev/nvme0n1"
   ssh $host "sudo mkfs.xfs -f /dev/nvme0n1p1"
@@ -43,14 +45,16 @@ do
   ssh $host "sudo mount -a"
 done
 
-PD_HOSTS="{{ componentIPs ['scale-tidb'] | join(' ') }}"
-for host in $PD_HOSTS
+{% if componentIPs.get['scale-tidb'] is defined %}
+TIDB_HOSTS="{{ componentIPs ['scale-tidb'] | join(' ') }}"
+for host in $TIDB_HOSTS
 do
   ssh $host "printf 'o\nn\np\n1\n\n+20G\nw\n' | sudo fdisk /dev/nvme0n1"
   ssh $host "sudo mkfs.xfs -f /dev/nvme0n1p1"
   ssh $host 'echo "$(sudo blkid /dev/nvme0n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab'
   ssh $host "sudo mount -a"
 done
+{% endif %}
 
 FLASH_HOSTS="{{ componentIPs ['tiflash'] | join(' ') }}"
 for host in $FLASH_HOSTS

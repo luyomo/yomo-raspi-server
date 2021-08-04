@@ -1,4 +1,6 @@
 tidb_servers:
+{% if componentIPs.get['scale-tidb'] is defined %}
 {% for ip in componentIPs['scale-tidb'] %}
   - host: {{ ip }}
 {% endfor %}
+{% endif %}

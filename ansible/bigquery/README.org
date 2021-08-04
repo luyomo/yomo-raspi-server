@@ -4,6 +4,24 @@ https://qiita.com/ShuA/items/dc933ca11cbd541ebfd7
 
 bq --project_id=dbaas-test-268007 mk --schema=N_NATIONKEY:INTEGER,N_NAME:STRING,N_REGIONKEY:INTEGER,N_COMMENT:STRING mixi.NATION
 
-bq --project_id=dbaas-test-268007 load --field_delimiter='|' mixi.NATION /tmp/csv/nation.tbl
 
 bq --project_id=dbaas-test-268007 query "select * from mixi.NATION"
+
+bq --project_id=sales-demo-321300 load --field_delimiter='|' mixi.NATION /DATA/data/03/tpch.nation.csv
+bq --project_id=sales-demo-321300 load --field_delimiter='|' mixi.supplier /DATA/data/03/tpch.supplier.csv
+bq --project_id=sales-demo-321300 load --field_delimiter='|' mixi.region   /DATA/data/03/tpch.region.csv
+bq --project_id=sales-demo-321300 load --field_delimiter='|' mixi.partsupp /DATA/data/03/tpch.partsupp.csv
+bq --project_id=sales-demo-321300 load --field_delimiter='|' mixi.part     /DATA/data/03/tpch.part.csv
+bq --project_id=sales-demo-321300 load --field_delimiter='|' mixi.orders   /DATA/data/03/tpch.orders.csv
+bq --project_id=sales-demo-321300 load --field_delimiter='|' mixi.lineitem /DATA/data/03/tpch.lineitem.csv
+bq --project_id=sales-demo-321300 load --field_delimiter='|' mixi.customer /DATA/data/03/tpch.customer.csv
+
+bq --project_id=sales-demo-321300 extract --destination_format CSV --field_delimiter '|' --print_header=false mixi.nation     "gs://tidbjaytest/tidbtest/tpch02/mixi.nation.csv"
+bq --project_id=sales-demo-321300 extract --destination_format CSV --field_delimiter '|' --print_header=false mixi.supplier   "gs://tidbjaytest/tidbtest/tpch02/mixi.supplier.csv"
+bq --project_id=sales-demo-321300 extract --destination_format CSV --field_delimiter '|' --print_header=false mixi.region     "gs://tidbjaytest/tidbtest/tpch02/mixi.region.csv"
+bq --project_id=sales-demo-321300 extract --destination_format CSV --field_delimiter '|' --print_header=false mixi.partsupp   "gs://tidbjaytest/tidbtest/tpch02/mixi.partsupp*.csv"
+bq --project_id=sales-demo-321300 extract --destination_format CSV --field_delimiter '|' --print_header=false mixi.part       "gs://tidbjaytest/tidbtest/tpch02/mixi.part*.csv"
+bq --project_id=sales-demo-321300 extract --destination_format CSV --field_delimiter '|' --print_header=false mixi.orders     "gs://tidbjaytest/tidbtest/tpch02/mixi.orders*.csv"
+bq --project_id=sales-demo-321300 extract --destination_format CSV --field_delimiter '|' --print_header=false mixi.lineitem   "gs://tidbjaytest/tidbtest/tpch02/mixi.lineitem*.csv"
+bq --project_id=sales-demo-321300 extract --destination_format CSV --field_delimiter '|' --print_header=false mixi.customer   "gs://tidbjaytest/tidbtest/tpch02/mixi.customer*.csv"
+

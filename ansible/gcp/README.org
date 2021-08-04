@@ -461,9 +461,13 @@ sudo systemctl start dm-worker
   + test data download
   + config file preparation
 ** TIUP 
-  + Confirme the mysql connection 
+  + TIUP install URL
+    https://docs.pingcap.com/tidb/stable/production-deployment-using-tiup
+  + Confirm the mysql connection 
+    #+BEGIN_SRC
      mysql -h 35.187.213.46 -u root -P 4000
      select tidb_version()
+    #+END_SRC
   + Open the dashboard
   /etc/tidb/setDashboard.sh
   http://35.189.141.234:2379/dashboard
@@ -539,3 +543,8 @@ mysql$select post_title from wp_posts;
 $tiup cluster scale-in tidbtest --node 10.146.15.228:4000
 #+END_SRC
 
+
+** TODO
+01. add sleep before running mariadb permission granting
+02. add sleep before running sourcr/task creating 
+03. Move the tidb resource creation for wordpress after tidb preparation

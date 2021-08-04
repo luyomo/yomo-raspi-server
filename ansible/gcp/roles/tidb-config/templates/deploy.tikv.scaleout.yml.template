@@ -1,4 +1,6 @@
 tikv_servers:
+{% if componentIPs.get['scale-kv'] is defined %}
 {% for ip in componentIPs['scale-kv'] %}
   - host: {{ ip }}
 {% endfor %}
+{% endif %}

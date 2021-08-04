@@ -3,7 +3,9 @@ global:
   ssh_port: 22
   deploy_dir: "/DATA/tidb-deploy"
   data_dir: "/DATA/tidb-data"
-server_configs: {}
+server_configs:
+  tidb:
+    mem-quota-query: 23622320128
 tidb_servers:
 {% for ip in componentIPs['tidb'] %}
   - host: {{ ip }}
