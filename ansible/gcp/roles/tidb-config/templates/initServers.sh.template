@@ -19,7 +19,7 @@ done
 KV_HOSTS="{{ componentIPs ['kv'] | join(' ') }}"
 for host in $KV_HOSTS
 do
-  ssh $host "printf 'o\nn\np\n1\n\n+100G\nw\n' | sudo fdisk /dev/nvme0n1"
+  ssh $host "printf 'o\nn\np\n1\n\n+350G\nw\n' | sudo fdisk /dev/nvme0n1"
   ssh $host "sudo mkfs.xfs -f /dev/nvme0n1p1"
   ssh $host 'echo "$(sudo blkid /dev/nvme0n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab'
   ssh $host "sudo mount -a"
@@ -29,7 +29,7 @@ done
 KV_HOSTS="{{ componentIPs ['scale-kv'] | join(' ') }}"
 for host in $KV_HOSTS
 do
-  ssh $host "printf 'o\nn\np\n1\n\n+100G\nw\n' | sudo fdisk /dev/nvme0n1"
+  ssh $host "printf 'o\nn\np\n1\n\n+350G\nw\n' | sudo fdisk /dev/nvme0n1"
   ssh $host "sudo mkfs.xfs -f /dev/nvme0n1p1"
   ssh $host 'echo "$(sudo blkid /dev/nvme0n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab'
   ssh $host "sudo mount -a"
@@ -59,13 +59,13 @@ done
 FLASH_HOSTS="{{ componentIPs ['tiflash'] | join(' ') }}"
 for host in $FLASH_HOSTS
 do
-  ssh $host "printf 'o\nn\np\n1\n\n+200G\nw\n' | sudo fdisk /dev/nvme0n1"
+  ssh $host "printf 'o\nn\np\n1\n\n+350G\nw\n' | sudo fdisk /dev/nvme0n1"
   ssh $host "sudo mkfs.xfs -f /dev/nvme0n1p1"
   ssh $host 'echo "$(sudo blkid /dev/nvme0n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab'
   ssh $host "sudo mount -a"
 done
 
-printf 'o\nn\np\n1\n\n+200G\nw\n' | sudo fdisk /dev/nvme0n1
+printf 'o\nn\np\n1\n\n+350G\nw\n' | sudo fdisk /dev/nvme0n1
 sudo mkfs.xfs -f /dev/nvme0n1p1
 echo "$(sudo blkid /dev/nvme0n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab
 sudo chown -R {{TIDB_USER}}:{{TIDB_USER}} /DATA

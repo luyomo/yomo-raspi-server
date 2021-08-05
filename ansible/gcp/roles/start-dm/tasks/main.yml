@@ -15,6 +15,18 @@
     - dm-master
     - dm-worker
 
+- name: Grant permission to wordpress
+  shell: "{{item}}"
+  with_items:
+    - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'create database if not exists wordpress'"
+    - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'create user if not exists wordpress@`%` identified by \"wordpress\"'"
+    - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'grant select, update, insert, delete on wordpress.* to `wordpress`@`%`'"
+    - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'set global tidb_enable_noop_functions=on'"
+
+- name: Pause for 20 seconds to wait db instance up
+  pause:
+    seconds: 20
+
 - name: Start the task
   tags:
     - dm
