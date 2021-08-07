@@ -28,6 +28,7 @@
     - {src: "deploy.yml.template"                ,     dest: "deploy.yml"                 , mode: "0644" }
     - {src: "deploy.tidb.scaleout.yml.template"  ,     dest: "deploy.tidb.scaleout.yml"   , mode: "0644" }
     - {src: "deploy.tikv.scaleout.yml.template"  ,     dest: "deploy.tikv.scaleout.yml"   , mode: "0644" }
+    - {src: "deploy.dm.yml.template"             ,     dest: "deploy.dm.yml"              , mode: "0644" }
     - {src: "write-kv.sh.template"               ,     dest: "write-kv.sh"                , mode: "0755" }
     - {src: "read-kv.sh.template"                ,     dest: "read-kv.sh"                 , mode: "0755" }
     - {src: "startTIDB.sh"                       ,     dest: "startTIDB.sh"               , mode: "0755" }
@@ -53,3 +54,6 @@
     owner: "{{TIDB_USER}}"
     group: "{{TIDB_USER}}"
     mode: "0600"
+
+- name: 03.01 disk initialization
+  shell: "/etc/tidb/initServers.sh"

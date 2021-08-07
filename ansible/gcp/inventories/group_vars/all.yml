@@ -1,2 +1,7 @@
-CLUSTER_NAME: kv-benchmark
-REGION: ap-northeast-1
+CLUSTER_NAME: gcptest
+REGION: asia-northeast1
+service_account_file: /etc/gcp/sales-demo.json
+project: sales-demo-321300
+auth_kind: serviceaccount
+scopes:
+  - https://www.googleapis.com/auth/compute

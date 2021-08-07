@@ -4,7 +4,7 @@
     - basic
     - zones
   gcp_zones_info:
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
@@ -55,7 +55,7 @@
   gcp_compute_address:
     state:                present
     name:                 'gw-dmm-ws'
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
@@ -69,7 +69,7 @@
     name:                 disk-dmm-ws
     source_image:         projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts
     size_gb:              10
-    zone:                 'asia-northeast1-a'
+    zone:                 "{{ zones | first        }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
@@ -103,11 +103,11 @@
       - name: External NAT
         nat_ip:           "{{ ipaddr               }}"
         type:             ONE_TO_ONE_NAT
-    zone:                 'asia-northeast1-a'
+    zone:                 "{{ zones | first        }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
-    state: present
+    state:                present
 
 ##### Prepare the pds nodes
 - name: 05.01 Create the disk for pds
@@ -132,7 +132,7 @@
     - pd
   gcp_compute_instance:
     name:          "ins-dmm-pd-{{ item.0 }}"
-    machine_type:  n1-standard-2
+    machine_type:  n1-standard-8
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -163,7 +163,7 @@
   gcp_zones_compute_instance_info:
     filters:
     - labels.component = pd
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
@@ -196,7 +196,7 @@
     name: pdtargetpool
     instances:            "{{ [ pdInstances['resources'] | first ] }}"
     #health_check:         "{{ healthcheck                }}"
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project                    }}"
     auth_kind:            "{{ auth_kind                  }}"
     service_account_file: "{{ service_account_file       }}"
@@ -209,7 +209,7 @@
   gcp_compute_address:
     state:                present
     name:                 'pd-gateway'
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
@@ -221,7 +221,7 @@
     - pd
   gcp_compute_forwarding_rule:
     name:                 dmmpdgateway
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     target:               "{{ pdtargetpool         }}"
     ip_protocol:          TCP
     port_range:           2379-3000
@@ -254,7 +254,7 @@
     - kv
   gcp_compute_instance:
     name:          "ins-dmm-kv-{{ item.0 }}"
-    machine_type:  n1-standard-8
+    machine_type:  n1-standard-16
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -293,7 +293,7 @@
     state:                present
     labels:
       component:          "scale-kv"
-  with_indexed_items: "{{ [ zones | last ] }}"
+  with_indexed_items: "{{ [ zones ] }}"
   register: disk_dmm_kv_scale
 
 - name: 06.04 Create the kv instance for scale out
@@ -301,7 +301,7 @@
     - kv
   gcp_compute_instance:
     name:          "ins-dmm-kv-scale-{{ item.0 }}"
-    machine_type:  n1-standard-8
+    machine_type:  n1-standard-16
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -349,7 +349,7 @@
     - tidb
   gcp_compute_instance:
     name:          "ins-dmm-tidb-{{ item.0 }}"
-    machine_type:  n1-standard-8
+    machine_type:  n1-standard-16
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -365,7 +365,7 @@
     labels:
       environment: dmm
       component:   tidb
-      tidb:        yes
+      tidb:        true
     network_interfaces:
     - network:            "{{ network              }}"
     zone:                 "{{ item.1.item[1]       }}"
@@ -381,7 +381,7 @@
   gcp_zones_compute_instance_info:
     filters:
     - labels.component = tidb
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
@@ -412,7 +412,7 @@
     - tidb
   gcp_compute_forwarding_rule:
     name:                 dmmgateway
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
@@ -423,7 +423,7 @@
     - tidb
   gcp_compute_target_pool:
     name: tidbtargetpool
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project                    }}"
     auth_kind:            "{{ auth_kind                  }}"
     service_account_file: "{{ service_account_file       }}"
@@ -436,7 +436,7 @@
     name: tidbtargetpool
     instances:            "{{ tidbInstances['resources'] }}"
     #health_check:         "{{ healthcheck                }}"
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project                    }}"
     auth_kind:            "{{ auth_kind                  }}"
     service_account_file: "{{ service_account_file       }}"
@@ -449,7 +449,7 @@
   gcp_compute_address:
     state:                present
     name:                 'tidb-gateway'
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
@@ -461,7 +461,7 @@
     - tidb
   gcp_compute_forwarding_rule:
     name:                 dmmgateway
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     project:              "{{ project              }}"
     auth_kind:            "{{ auth_kind            }}"
     service_account_file: "{{ service_account_file }}"
@@ -472,7 +472,7 @@
     - tidb
   gcp_compute_forwarding_rule:
     name:                 dmmgateway
-    region:               'asia-northeast1'
+    region:               "{{ REGION               }}"
     target:               "{{ targetpool           }}"
     ip_protocol:          TCP
     port_range:           4000-4000
@@ -496,7 +496,7 @@
     state:                present
     labels:
       component:          "scale-tidb"
-  with_indexed_items: "{{ [ zones | first ] }}"
+  with_indexed_items: "{{ [ zones | first ] + [ zones | last  ] }}"
   register: disk_dmm_tidb_scale
 
 - name: 07.12 Create the tidb instance's scale out
@@ -504,7 +504,7 @@
     - tidb
   gcp_compute_instance:
     name:          "ins-dmm-tidb-scale-{{ item.0 }}"
-    machine_type:  n1-standard-8
+    machine_type:  n1-standard-16
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -532,7 +532,6 @@
 
 ##### Create the nodes for dm
 - name: 08.01 Create the disk for dm
-  when: false
   tags:
     - dm
   gcp_compute_disk:
@@ -550,7 +549,6 @@
   register: disk_dmm_dm
 
 - name: 08.02 Create the tidb instance
-  when: false
   tags:
     - dm
   gcp_compute_instance:

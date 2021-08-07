@@ -35,7 +35,6 @@
     mode: u=rw,g=r,o=r
   loop:
     - { src: docker-compose.yml,      dest: docker-compose.yml      }
-    - { src: docker-compose.tidb.yml, dest: docker-compose.tidb.yml }
 
 - name: Start the mariadb
   become: yes

@@ -8,9 +8,10 @@ services:
     restart: always
     environment:
       WORDPRESS_DB_HOST: {{ gatewayIP }}:3306
+      #      WORDPRESS_DB_HOST: {{ componentIPs['externalIP'] }}:4000
       WORDPRESS_DB_USER: {{ MYSQL_DBUSER }}
       WORDPRESS_DB_PASSWORD: {{ MYSQL_DBPASSWD }}
     networks:
-      - wordpress_mariadb
+      - wordpress
 networks:
-  wordpress_mariadb:
+  wordpress:

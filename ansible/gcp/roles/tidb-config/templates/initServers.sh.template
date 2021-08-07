@@ -7,6 +7,7 @@ do
   ssh $host "sudo mkdir /DATA"
 done
 
+{% if 'pd' in componentIPs %}
 PD_HOSTS="{{ componentIPs ['pd'] | join(' ') }}"
 for host in $PD_HOSTS
 do
@@ -15,7 +16,9 @@ do
   ssh $host 'echo "$(sudo blkid /dev/nvme0n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab'
   ssh $host "sudo mount -a"
 done
+{% endif %}
 
+{% if 'kv' in componentIPs %}
 KV_HOSTS="{{ componentIPs ['kv'] | join(' ') }}"
 for host in $KV_HOSTS
 do
@@ -24,8 +27,9 @@ do
   ssh $host 'echo "$(sudo blkid /dev/nvme0n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab'
   ssh $host "sudo mount -a"
 done
+{% endif %}
 
-{% if componentIPs.get['scale-kv'] is defined %}
+{% if 'scale-kv' in componentIPs %}
 KV_HOSTS="{{ componentIPs ['scale-kv'] | join(' ') }}"
 for host in $KV_HOSTS
 do
@@ -36,6 +40,7 @@ do
 done
 {% endif %}
 
+{% if 'tidb' in componentIPs %}
 TIDB_HOSTS="{{ componentIPs ['tidb'] | join(' ') }}"
 for host in $TIDB_HOSTS
 do
@@ -44,8 +49,9 @@ do
   ssh $host 'echo "$(sudo blkid /dev/nvme0n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab'
   ssh $host "sudo mount -a"
 done
+{% endif %}
 
-{% if componentIPs.get['scale-tidb'] is defined %}
+{% if 'scale-tidb' in componentIPs %}
 TIDB_HOSTS="{{ componentIPs ['scale-tidb'] | join(' ') }}"
 for host in $TIDB_HOSTS
 do
@@ -56,6 +62,7 @@ do
 done
 {% endif %}
 
+{% if 'tiflash' in componentIPs %}
 FLASH_HOSTS="{{ componentIPs ['tiflash'] | join(' ') }}"
 for host in $FLASH_HOSTS
 do
@@ -64,6 +71,7 @@ do
   ssh $host 'echo "$(sudo blkid /dev/nvme0n1p1 -o export | grep "^UUID")     /DATA       xfs    defaults,noatime 0 0" | sudo tee -a /etc/fstab'
   ssh $host "sudo mount -a"
 done
+{% endif %}
 
 printf 'o\nn\np\n1\n\n+350G\nw\n' | sudo fdisk /dev/nvme0n1
 sudo mkfs.xfs -f /dev/nvme0n1p1

@@ -2,13 +2,6 @@
 
 - hosts: servers
   gather_facts: True
-  vars:
-    service_account_file: /etc/gcp/sales-demo.json
-    project: sales-demo-321300
-    auth_kind: serviceaccount
-    scopes:
-      - https://www.googleapis.com/auth/compute
-
   roles:
     - ./roles/getGcpInfo
 

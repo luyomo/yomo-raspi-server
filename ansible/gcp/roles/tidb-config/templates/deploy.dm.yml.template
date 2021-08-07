@@ -1,0 +1,34 @@
+global:
+  user: "{{TIDB_USER}}"
+  ssh_port: 22
+  deploy_dir: "/DATA/dm-deploy"
+  data_dir: "/DATA/dm-data"
+
+master_servers:
+{% if 'dm' in componentIPs %}
+{% for ip in componentIPs['dm'] %}
+   - host: {{ ip }}
+{% endfor %}
+{% endif %}
+
+worker_servers:
+{% if 'dm' in componentIPs %}
+{% for ip in componentIPs['dm'] %}
+   - host: {{ ip }}
+{% endfor %}
+{% endif %}
+
+monitoring_servers:
+{% if 'dm' in componentIPs %}
+  - host: {{ componentIPs['dm'] | first }}
+{% endif %}
+
+grafana_servers:
+{% if 'dm' in componentIPs %}
+  - host: {{ componentIPs['dm'] | first }}
+{% endif %}
+
+alertmanager_servers:
+{% if 'dm' in componentIPs %}
+  - host: {{ componentIPs['dm'] | first }}
+{% endif %}

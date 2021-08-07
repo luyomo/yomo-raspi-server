@@ -548,3 +548,18 @@ $tiup cluster scale-in tidbtest --node 10.146.15.228:4000
 01. add sleep before running mariadb permission granting
 02. add sleep before running sourcr/task creating 
 03. Move the tidb resource creation for wordpress after tidb preparation
+
+
+
+/opt/dm-v2.0.4-linux-amd64/bin/dmctl --master-addr 127.0.0.1:8261 operate-source create /var/dm/source.yaml
+/opt/dm-v2.0.4-linux-amd64/bin/dmctl --master-addr 127.0.0.1:8261 start-task /var/dm/task.yaml
+/opt/dm-v2.0.4-linux-amd64/bin/dmctl --master-addr 127.0.0.1:8261 query-status test
+
+/opt/dm-v2.0.4-linux-amd64/bin/dmctl --master-addr 127.0.0.1:8261 stop-task test
+/opt/dm-v2.0.4-linux-amd64/bin/dmctl --master-addr 127.0.0.1:8261 operate-source stop mysql-replica-01 
+
+export GCP_AUTH_KIND=serviceaccount
+export GCP_SERVICE_ACCOUNT_EMAIL=jay.zhang@pingcap.com
+export GCP_SERVICE_ACCOUNT_FILE=/etc/gcp/sales-demo.json
+export GCP_SCOPES='https://www.googleapis.com/auth/compute'
+
