@@ -1,0 +1,32 @@
+- name: Get the data from upstream tasks
+  set_fact:
+    componentIPs: "{{ hostvars['localhost'].get('componentIPs')['resources'] }}"
+    ws_gateway_ip:   "{{ hostvars['localhost'].get('ws_gateway_ip')['resources'][0]['address']  }}"
+    pd_gateway_ip:   "{{ hostvars['localhost'].get('pd_gateway_ip')['resources'][0]['address']  }}"
+    tidb_gateway_ip: "{{ hostvars['localhost'].get('tidb_gateway_ip')['resources'][0]['address']  }}"
+
+- name: Create and grant permission to tickdata database
+  shell: "{{item}}"
+  with_items:
+    - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'create database if not exists tickdata'"
+    - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'create user if not exists tickuser@`%` identified by \"tickuser\"'"
+    - "mysql -h {{ componentIPs['tidb'] | first }} -u root -P 4000 mysql -e 'grant all on tickdata.* to `tickuser`@`%`'"
+
+- name: Download the source code
+  become: yes
+  git:
+    repo: https://github.com/luyomo/stock-api.git
+    dest: /opt/stock-api
+
+- name: 02. Deploy all the templates
+  become: yes
+  ansible.builtin.template:
+    src:  "{{ item.src  }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - {src: "stockApi.service"            ,     dest: "/etc/systemd/system/stockApi.service"             , mode: "0644" }
+    - {src: "initTickData.sh"             ,     dest: "/etc/tidb/initTickData.sh"                        , mode: "0755" }
+
+      #- name: Create the db and object for initialization
+      #  command: "/etc/tidb/initTickData.sh"

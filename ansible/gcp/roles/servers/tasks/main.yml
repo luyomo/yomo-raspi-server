@@ -81,7 +81,7 @@
     - workstation
   gcp_compute_instance:
     name:          ins-dmm-ws
-    machine_type:  n1-standard-32
+    machine_type:  "{{ vm_modal.workstation }}"
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -132,7 +132,7 @@
     - pd
   gcp_compute_instance:
     name:          "ins-dmm-pd-{{ item.0 }}"
-    machine_type:  n1-standard-8
+    machine_type:  "{{ vm_modal.pd }}"
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -254,7 +254,7 @@
     - kv
   gcp_compute_instance:
     name:          "ins-dmm-kv-{{ item.0 }}"
-    machine_type:  n1-standard-16
+    machine_type:  "{{ vm_modal.tikv  }}"
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -301,7 +301,7 @@
     - kv
   gcp_compute_instance:
     name:          "ins-dmm-kv-scale-{{ item.0 }}"
-    machine_type:  n1-standard-16
+    machine_type:  "{{ vm_modal.tikv }}"
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -349,7 +349,7 @@
     - tidb
   gcp_compute_instance:
     name:          "ins-dmm-tidb-{{ item.0 }}"
-    machine_type:  n1-standard-16
+    machine_type:  "{{ vm_modal.tidb }}"
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -483,6 +483,7 @@
     state:                present
 
 - name: 07.11 Create the disk for tidbs's scale out
+  when: false
   tags:
     - tidb
   gcp_compute_disk:
@@ -500,11 +501,12 @@
   register: disk_dmm_tidb_scale
 
 - name: 07.12 Create the tidb instance's scale out
+  when: false
   tags:
     - tidb
   gcp_compute_instance:
     name:          "ins-dmm-tidb-scale-{{ item.0 }}"
-    machine_type:  n1-standard-16
+    machine_type:  "{{ vm_modal.tidb }}"
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -553,7 +555,7 @@
     - dm
   gcp_compute_instance:
     name:          "ins-dmm-dm-{{ item.0 }}"
-    machine_type:  n1-standard-1
+    machine_type:  "{{ vm_modal.dm  }}"
     disks:
     - auto_delete: 'true'
       boot:        'true'
@@ -601,7 +603,7 @@
     - tiflash
   gcp_compute_instance:
     name:          "ins-dmm-tiflash-{{ item.0 }}"
-    machine_type:  n1-standard-8
+    machine_type:  "{{ vm_modal.tiflash }}"
     disks:
     - auto_delete: 'true'
       boot:        'true'

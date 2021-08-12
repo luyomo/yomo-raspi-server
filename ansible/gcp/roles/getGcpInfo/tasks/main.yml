@@ -46,3 +46,33 @@
     ansible_ssh_host: "{{ componentIPs['resources']['externalIP'] }}"
     ansible_ssh_user: 'jay_zhang'
     ansible_ssh_port: '22'
+
+- name: Get workstation ip
+  gcp_compute_address_info:
+    filters:
+    - name = gw-dmm-ws
+    region:               "{{ REGION               }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+  register: ws_gateway_ip
+
+- name: Get dashboard ip
+  gcp_compute_address_info:
+    filters:
+    - name = pd-gateway
+    region:               "{{ REGION               }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+  register: pd_gateway_ip
+
+- name: Get tidb ip
+  gcp_compute_address_info:
+    filters:
+    - name = tidb-gateway
+    region:               "{{ REGION               }}"
+    project:              "{{ project              }}"
+    auth_kind:            "{{ auth_kind            }}"
+    service_account_file: "{{ service_account_file }}"
+  register: tidb_gateway_ip

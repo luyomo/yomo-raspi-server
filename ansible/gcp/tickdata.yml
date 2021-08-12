@@ -1,0 +1,13 @@
+# demo_setup.yml
+
+- hosts: servers
+  gather_facts: True
+
+  roles:
+    - ./roles/getGcpInfo
+
+- hosts: mysql
+  gather_facts: True
+
+  roles:
+    - ./roles/tickdata

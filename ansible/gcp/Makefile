@@ -37,8 +37,8 @@ wordpress:
 start-dm:
 	ansible-playbook -i inventories/hosts.yml start-dm.yml
 
-swap-wordpress:
-	ansible-playbook -i inventories/hosts.yml start-dm.yml --tags "swap_wordpress"
+tickdata:
+	ansible-playbook -i inventories/hosts.yml tickdata.yml
 
 add-kv:
 	ansible-playbook -i inventories/hosts.yml servers.yml --tags "add-kv,basic"

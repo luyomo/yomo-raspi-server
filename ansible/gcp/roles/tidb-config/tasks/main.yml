@@ -1,14 +1,9 @@
 - name: Get the data from upstream tasks
   set_fact:
-    componentIPs: "{{ hostvars['localhost'].get('componentIPs')['resources'] }}"
-
-    #- name: Print all the IPS
-    #  debug:
-    #    var=componentIPs
-    #
-    #- name: Print PD Ips
-    #  debug:
-    #    var=PD_IPS
+    componentIPs:    "{{ hostvars['localhost'].get('componentIPs')['resources'] }}"
+    ws_gateway_ip:   "{{ hostvars['localhost'].get('ws_gateway_ip')['resources'][0]['address']  }}"
+    pd_gateway_ip:   "{{ hostvars['localhost'].get('pd_gateway_ip')['resources'][0]['address']  }}"
+    tidb_gateway_ip: "{{ hostvars['localhost'].get('tidb_gateway_ip')['resources'][0]['address']  }}"
 
 - name: 01. Prepare the workstation 
   become: yes
@@ -39,6 +34,7 @@
     - {src: "downloadTestData.sh"                ,     dest: "downloadTestData.sh"        , mode: "0755" }
     - {src: "restoreData.sh"                     ,     dest: "restoreData.sh"             , mode: "0755" }
     - {src: "enableTiFlash.sh"                   ,     dest: "enableTiFlash.sh"           , mode: "0755" }
+    - {src: "README.org"                         ,     dest: "README.org"                 , mode: "0644" }
 
 - name: 02. Deploy the private key
   ansible.builtin.copy:

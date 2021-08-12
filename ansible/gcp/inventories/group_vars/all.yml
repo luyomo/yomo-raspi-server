@@ -5,3 +5,10 @@ project: sales-demo-321300
 auth_kind: serviceaccount
 scopes:
   - https://www.googleapis.com/auth/compute
+vm_modal:
+  tikv: n1-standard-32
+  tidb: n1-standard-16
+  pd: n1-standard-8
+  dm: n1-standard-1
+  tiflash: n1-standard-32
+  workstation: n1-standard-32

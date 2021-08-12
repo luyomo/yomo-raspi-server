@@ -1,6 +1,9 @@
 - name: Get the data from upstream tasks
   set_fact:
     componentIPs: "{{ hostvars['localhost'].get('componentIPs')['resources'] }}"
+    ws_gateway_ip:   "{{ hostvars['localhost'].get('ws_gateway_ip')['resources'][0]['address']   }}"
+    pd_gateway_ip:   "{{ hostvars['localhost'].get('pd_gateway_ip')['resources'][0]['address']   }}"
+    tidb_gateway_ip: "{{ hostvars['localhost'].get('tidb_gateway_ip')['resources'][0]['address']   }}"
 
 - name: Get the data from upstream tasks
   set_fact:

@@ -1,0 +1,11 @@
+[Unit]
+Description=This is the service for kline's api
+
+[Service]
+User={{TIDB_USER}}
+WorkingDirectory=/opt/stock-api
+ExecStart=/usr/local/go/bin/go run /opt/stock-api/main.go --db-host={{ tidb_gateway_ip }} --db-port=4000 --db-user=tickuser --db-pass=tickuser --db-name=tickdata --port=8001
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
