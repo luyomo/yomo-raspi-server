@@ -1,0 +1,6 @@
+tiflash_servers:
+{% if 'scale-tiflash' in componentIPs %}
+{% for ip in componentIPs['scale-tiflash'] %}
+  - host: {{ ip }}
+{% endfor %}
+{% endif %}

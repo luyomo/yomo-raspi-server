@@ -341,7 +341,7 @@
     state:                present
     labels:
       component:          "tidb"
-  with_indexed_items: "{{ zones }}"
+  with_indexed_items: "{{ zones[-2:] }}"
   register: disk_dmm_tidb
 
 - name: 07.02 Create the tidb instance
@@ -483,7 +483,6 @@
     state:                present
 
 - name: 07.11 Create the disk for tidbs's scale out
-  when: false
   tags:
     - tidb
   gcp_compute_disk:
@@ -501,7 +500,6 @@
   register: disk_dmm_tidb_scale
 
 - name: 07.12 Create the tidb instance's scale out
-  when: false
   tags:
     - tidb
   gcp_compute_instance:
@@ -594,7 +592,7 @@
     service_account_file: "{{ service_account_file }}"
     state:                present
     labels:
-      component:          "tiflash"
+      component:          "scale-tiflash"
   with_indexed_items: "{{ zones }}"
   register: disk_dmm_tiflash
 
@@ -618,7 +616,7 @@
       cost-center: '12345'
     labels:
       environment: dmm
-      component:   tiflash
+      component:   scale-tiflash
     network_interfaces:
     - network:            "{{ network              }}"
     zone:                 "{{ item.1.item[1]       }}"

@@ -18,10 +18,12 @@ tikv_servers:
 {% for ip in componentIPs['kv'] %}
   - host: {{ ip }}
 {% endfor %}
+{% if 'tiflash' in componentIPs %}
 tiflash_servers:
 {% for ip in componentIPs['tiflash'] %}
   - host: {{ ip }}
 {% endfor %}
+{% endif %}
 
 monitoring_servers:
   - host: {{ componentIPs['pd'] | first }}

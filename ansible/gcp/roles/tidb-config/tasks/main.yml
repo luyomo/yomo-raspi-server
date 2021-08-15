@@ -19,22 +19,23 @@
     dest: "/etc/tidb/{{ item.dest }}"
     mode: "{{item.mode}}"
   with_items:
-    - {src: "initServers.sh.template"            ,     dest: "initServers.sh"             , mode: "0755" }
-    - {src: "deploy.yml.template"                ,     dest: "deploy.yml"                 , mode: "0644" }
-    - {src: "deploy.tidb.scaleout.yml.template"  ,     dest: "deploy.tidb.scaleout.yml"   , mode: "0644" }
-    - {src: "deploy.tikv.scaleout.yml.template"  ,     dest: "deploy.tikv.scaleout.yml"   , mode: "0644" }
-    - {src: "deploy.dm.yml.template"             ,     dest: "deploy.dm.yml"              , mode: "0644" }
-    - {src: "write-kv.sh.template"               ,     dest: "write-kv.sh"                , mode: "0755" }
-    - {src: "read-kv.sh.template"                ,     dest: "read-kv.sh"                 , mode: "0755" }
-    - {src: "startTIDB.sh"                       ,     dest: "startTIDB.sh"               , mode: "0755" }
-    - {src: "setDashboard.sh.template"           ,     dest: "setDashboard.sh"            , mode: "0755" }
-    - {src: "export.sh.template"                 ,     dest: "export.sh"                  , mode: "0755" }
-    - {src: "export_tpch.sh"                     ,     dest: "export_tpch.sh"             , mode: "0755" }
-    - {src: "tidb-lightning.toml.template"       ,     dest: "tidb-lightning.toml"        , mode: "0755" }
-    - {src: "downloadTestData.sh"                ,     dest: "downloadTestData.sh"        , mode: "0755" }
-    - {src: "restoreData.sh"                     ,     dest: "restoreData.sh"             , mode: "0755" }
-    - {src: "enableTiFlash.sh"                   ,     dest: "enableTiFlash.sh"           , mode: "0755" }
-    - {src: "README.org"                         ,     dest: "README.org"                 , mode: "0644" }
+    - {src: "initServers.sh.template"               ,     dest: "initServers.sh"                , mode: "0755" }
+    - {src: "deploy.yml.template"                   ,     dest: "deploy.yml"                    , mode: "0644" }
+    - {src: "deploy.tidb.scaleout.yml.template"     ,     dest: "deploy.tidb.scaleout.yml"      , mode: "0644" }
+    - {src: "deploy.tikv.scaleout.yml.template"     ,     dest: "deploy.tikv.scaleout.yml"      , mode: "0644" }
+    - {src: "deploy.tiflash.scaleout.yml.template"  ,     dest: "deploy.tiflash.scaleout.yml"   , mode: "0644" }
+    - {src: "deploy.dm.yml.template"                ,     dest: "deploy.dm.yml"                 , mode: "0644" }
+    - {src: "write-kv.sh.template"                  ,     dest: "write-kv.sh"                   , mode: "0755" }
+    - {src: "read-kv.sh.template"                   ,     dest: "read-kv.sh"                    , mode: "0755" }
+    - {src: "startTIDB.sh"                          ,     dest: "startTIDB.sh"                  , mode: "0755" }
+    - {src: "setDashboard.sh.template"              ,     dest: "setDashboard.sh"               , mode: "0755" }
+    - {src: "export.sh.template"                    ,     dest: "export.sh"                     , mode: "0755" }
+    - {src: "export_tpch.sh"                        ,     dest: "export_tpch.sh"                , mode: "0755" }
+    - {src: "tidb-lightning.toml.template"          ,     dest: "tidb-lightning.toml"           , mode: "0755" }
+    - {src: "downloadTestData.sh"                   ,     dest: "downloadTestData.sh"           , mode: "0755" }
+    - {src: "restoreData.sh"                        ,     dest: "restoreData.sh"                , mode: "0755" }
+    - {src: "enableTiFlash.sh"                      ,     dest: "enableTiFlash.sh"              , mode: "0755" }
+    - {src: "README.org"                            ,     dest: "README.org"                    , mode: "0644" }
 
 - name: 02. Deploy the private key
   ansible.builtin.copy:
