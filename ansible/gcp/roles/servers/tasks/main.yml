@@ -391,13 +391,9 @@
 - name: 07.04 Prepare the health check
   tags:
     - tidb
-  gcp_compute_health_check:
+  gcp_compute_http_health_check:
     name: checktidbstatus
-    type: TCP
-    tcp_health_check:
-      port: 4000
-      request: ping
-      response: pong
+    port: 10080
     healthy_threshold: 10
     timeout_sec: 2
     unhealthy_threshold: 5
@@ -419,10 +415,12 @@
     state:                absent
 
 - name: 07.06 Drop target pool from the instances
+  when: false
   tags:
     - tidb
   gcp_compute_target_pool:
     name: tidbtargetpool
+    health_check:         "{{ healthcheck                }}"
     region:               "{{ REGION               }}"
     project:              "{{ project                    }}"
     auth_kind:            "{{ auth_kind                  }}"
@@ -435,7 +433,8 @@
   gcp_compute_target_pool:
     name: tidbtargetpool
     instances:            "{{ tidbInstances['resources'] }}"
-    #health_check:         "{{ healthcheck                }}"
+    health_check:         "{{ healthcheck                }}"
+    #health_check:         "checktidbstatus"
     region:               "{{ REGION               }}"
     project:              "{{ project                    }}"
     auth_kind:            "{{ auth_kind                  }}"
